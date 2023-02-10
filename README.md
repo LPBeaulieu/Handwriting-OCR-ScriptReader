@@ -1,29 +1,25 @@
-# TintypeText
-This typewriter OCR application can convert JPEG typewritten text images into RTF documents, while removing typos for you!
+# ScriptReader
+This handwriting OCR application can convert JPEG handwritten text images into RTF documents, while removing typos for you!
 
 ![Image RTF basic mode](https://github.com/LPBeaulieu/Typewriter-OCR-TintypeText/blob/main/TintypeText%20basic%20rtf%20mode%20screenshot.jpg)
-<h3 align="center">Tintype¶Text</h3>
+<h3 align="center">ScriptReader</h3>
 <div align="center">
   
-  [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPLv3.0-brightgreen.svg)](https://github.com/LPBeaulieu/TintypeText/blob/main/LICENSE)
-  [![GitHub last commit](https://img.shields.io/github/last-commit/LPBeaulieu/TintypeText)](https://github.com/LPBeaulieu/TintypeText)
-  [![GitHub issues](https://img.shields.io/github/issues/LPBeaulieu/TintypeText)](https://github.com/LPBeaulieu/TintypeText)
+  [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPLv3.0-brightgreen.svg)](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/LICENSE)
+  [![GitHub last commit](https://img.shields.io/github/last-commit/LPBeaulieu/Handwriting-OCR-ScriptReader)](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader)
+  [![GitHub issues](https://img.shields.io/github/issues/LPBeaulieu/Handwriting-OCR-ScriptReader)](https://github.com/LPBeaulieu/TintypeText)
   
 </div>
 
 ---
 
-<p align="left"> <b>Tintype¶Text</b> is a tool enabling you to convert scanned typewritten pages (in JPEG image format) into rich text format (RTF) 
+<p align="left"> <b>ScriptReader</b> is a tool enabling you to convert scanned handwritten pages (in JPEG image format) into rich text format (RTF) 
   documents, complete with formatting elements such as text alignment, paragraphs, <u>underline</u>, <i>italics</i>, <b>bold</b> and <del>strikethrough</del>. </p>
-<p align="left"> A neat functionality of <b>Tintype¶Text</b> is that the typos (wrong typewritten characters overlaid with a hashtag)
-  automatically get filtered out, and do not appear in the final RTF text. This feature, when combined with erasable typewriter ink (see https://www.reddit.com/r/typewriters/comments/ujqxrh/how_to_make_erasable_typewriter_ink/) brings the typewriter well into the 21<sup>st</sup> century as a data entry tool!
-  
-  - You can get my <b>deep learning models</b> for both typewriters on which I developed the code on my Google Drive (<i>2021 
-Royal Epoch</i> https://drive.google.com/drive/folders/1DUKqYf7wIkRAobC8fYPjum5gFOJqJurv?usp=sharing and <i>1968 Olivetti Underwood Lettera 33</i> https://drive.google.com/drive/folders/1sykG3zUfr8RJVbk59ClnzHjO3qgkXTmF?usp=sharing), where the datasets and other useful information to build your own datasets may be found. 
-- The code showcased in this github page is the one that was used to generate a model with <b>99.93% optical character recognition (OCR) accuracy</b> with the 2021 Royal Epoch typewriter, which is in production and commercially available (I'm not affiliated with them, no worries).
-- The generalizability of the model trained on a 2021 Royal Epoch typewriter was assessed on another unit of the same model (2019 Royal Epoch typewriter), with a text over 6,000 characters long. It gave an OCR accuracy of 99.22%, thus demonstrating that deep learning models trained with <b>Tintype¶Text</b> could be used with other typewriters of the same model (albeit with somewhat lower accuracy).
-  
-    <br> 
+<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (grid cells containing errors that are filled in with ink)
+  automatically get filtered out, and do not appear in the final RTF text. This feature, when combined with erasable biodegradable fountain pen ink (see https://www.linkedin.com/feed/update/urn:li:activity:7027469654725947392/) further enhances the usefulness of the notebooks you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!
+
+<b>The code is still a work in progress, and this github repo will be updated as the project nears completion!</b>
+<br> 
 </p>
 
 ## 📝 Table of Contents
