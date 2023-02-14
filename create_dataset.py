@@ -162,6 +162,10 @@ if x_overlap == None:
 if y_overlap == None:
     y_overlap = round(0.75*lines_between_text*pixels_between_dots)
 
+#The "character_index" will keep track of the index of every
+#character in each of the pages of the dataset, so that every
+#character of a given category has a different file name.
+character_index = 0
 
 #This code obtains the individual character coordinates from the image files
 #listed in the "JPEG_file_names" list and generates JPEG images with overlaid
@@ -651,4 +655,95 @@ with alive_bar(len(JPEG_file_names)) as bar:
             os.makedirs(os.path.join(cwd, "Page image files with rectangles"))
         (cv2.imwrite(os.path.join(cwd, 'Page image files with rectangles', JPEG_file_names[i][:-4] +
         ' with character rectangles.jpg'), text_image_copy))
+
+
+
+        #Building a list of character labels (labels were obtained from a txt file named after the "JPEG_file_names[i]",
+        #which itself was written based on the image with overlaping character rectangles generated above).
+        #An important note to those who would like to train their own models is to generate and save the txt
+        #files exclusively in WordPad or Text Editor and not a full-fledged word processor, which would insert
+        #formatting information that would skew the character count.
+        labels = []
+        with open('Training&Validation Data/' + JPEG_file_names[i][:-4] + '.txt', 'r') as f:
+            text = f.read()
+            character_count = 0
+            for char in text:
+                #If the character in the txt file is a space or a line carriage ("\n"),
+                #no label is appended to the list "labels".
+                if text[character_count] == ' ' or text[character_count:character_count+1] == "\n":
+                    character_count+=1
+                    pass
+                #If the character in the txt file is a "И" (Cyrillic Capital Letter I,
+                #Python source code u"\u0418"), "space" is appended to the list "labels".
+                elif text[character_count] == u"\u0418":
+                    labels.append("space")
+                    character_count+=1
+                #If the character in the txt file is a "Б" (Cyrillic Capital Letter Be,
+                #Python source code u"\u0411"), "empty" is appended to the list "labels".
+                elif text[character_count] == u"\u0411":
+                    labels.append("empty")
+                    character_count+=1
+                #If the character in the txt file is a "/" (Python source code u"\u002F"), "forward-slash"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u002F":
+                    labels.append("forward slash")
+                    character_count+=1
+                #If the character in the txt file is a "?" (Python source code u"\u003F"), "?"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u003F":
+                    labels.append(u"\u003F")
+                    character_count+=1
+                #If the character in the txt file is a ".", "period"
+                #is appended to the list "labels".
+                elif text[character_count] == '.':
+                    labels.append("period")
+                    character_count+=1
+                #If the character in the txt file is a '"' (Python source code u"\u0022"), "double quote"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u0022":
+                    labels.append("double quote")
+                    character_count+=1
+                #If the character in the txt file is a "Д" (Cyrillic Capital Letter De,
+                #Python source code u"\u0434"), "to be deleted" is appended to the list "labels".
+                elif text[character_count] == u"\u03B3":
+                    labels.append("to be deleted")
+                    character_count+=1
+                #Other characters get appended to the list.
+                else:
+                    labels.append(text[character_count])
+                    character_count+=1
+
+        page_character_index = 0
+        #Generating the individual character images based on their x and y coordinates (from chars_x_y_coordinates),
+        #every image being placed in a folder corresponding to its label (labels were obtained from a txt file
+        #named after the "JPEG_file_names[i]"). The counter "char_index" is initialized to zero before the
+        #"for i in range(len(JPEG_file_names))" loop to avoid overwriting character images in the "Dataset" folder.
+        for j in range(len(chars_x_y_coordinates)):
+            for k in range(len(chars_x_y_coordinates[j])):
+                cropped_char = (text_image_gray[chars_x_y_coordinates[j][k][0][1]:
+                chars_x_y_coordinates[j][k][1][1], chars_x_y_coordinates[j][k][0][0]:
+                chars_x_y_coordinates[j][k][1][0]])
+
+                if not os.path.exists(os.path.join(cwd, "Dataset", labels[page_character_index])):
+                    os.makedirs(os.path.join(cwd, "Dataset", labels[page_character_index]))
+                file_path = os.path.join(cwd,  "Dataset", labels[page_character_index],
+                labels[page_character_index] + "-" + str(character_index) + ".jpg")
+                cv2.imwrite(file_path, cropped_char)
+                page_character_index += 1
+                character_index += 1
+
+        #As an added quality control step, the length of the list of character coordinates and their labels
+        #are printed on screen. The two lengths should be equivalent, as they both refer to the same characters.
+        print("Length of list 'chars_x_y_coordinates': " + str(page_character_index))
+        print("Length of list 'labels': " + str(len(labels)))
+
         bar()
+#The code below removes the folder "to be deleted" and its contents.
+#Otherwise, the model would also train on this category that includes
+#all character rectangles labeled as "@" in the ".txt" files, which
+#represent mistakes in the typing of the dataset on the typewriter
+#(and not "#" overlaid with another character).
+if os.path.exists(cwd + "/Dataset/to be deleted/"):
+    shutil.rmtree(cwd + "/Dataset/to be deleted/")
+
+    bar()
