@@ -17,8 +17,6 @@ This handwriting OCR application can convert JPEG handwritten text images into R
   documents, complete with formatting elements such as text alignment, paragraphs, <u>underline</u>, <i>italics</i>, <b>bold</b> and <del>strikethrough</del>. </p>
 <p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (grid cells containing errors that are filled in with ink)
   automatically get filtered out, and do not appear in the final RTF text. This feature, when combined with erasable biodegradable fountain pen ink (see https://www.linkedin.com/feed/update/urn:li:activity:7027469654725947392/) further enhances the usefulness of the notebooks you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!
-
-<b>The code is still a work in progress, and this github repo will be updated as the project nears completion!</b>
 <br> 
 </p>
 
@@ -30,39 +28,27 @@ This handwriting OCR application can convert JPEG handwritten text images into R
 - [Acknowledgments](#acknowledgments)
 
 ## ⛓️ Dependencies / Limitations <a name = "limitations"></a>
-- This Python project relies on the Fastai deep learning library (https://docs.fast.ai/) to generate a convoluted neural network 
+- This Python project relies on the Fastai deep learning library (https://docs.fast.ai/) to generate a convolutional neural network 
   deep learning model, which allows for typewriter optical character recognition (OCR). It also needs OpenCV to perform image segmentation 
-  (to crop the individual characters in the typewritten page images).
+  (to crop the individual characters in the typewritten page images) and glob2 to automatically retrieve the cropped character image size.
   
-- A deep learning model trained on a specific typewriter is unlikely to generalize well to other typewriter brands, which may use different 
-  typesets and character spacing. It is therefore preferable to train a model on your own typewriter.
-- For best results, the typewritten text should be <b>double spaced</b> to avoid segmentation mistakes or omissions and the 8 1/2" x 11" typewritten pages should be <b>scanned at a resolution of 600 dpi</b>, as this resolution was used when writing the code.
-- Every typewritten line should have <b>at least five adjoining letters</b> in order to be properly detected. Should a line only contain a word with 
-  four or fewer letters, you could make up for the missing letters by using any character (other than "#") overlaid with a hashtag, which will 
-  be interpreted by the code as an empty string, and will not impact the meaningful text on the line in the final rich text format (RTF) document.
-- The <b>hashtag character is reserved</b> for designating typos, as a hyphen or equal sign overlaid with a hashtag are very similar to a hashtag 
-  character by itself and would lead to OCR accuracy loss if it were used as a regular character.
-- The <b>"@" symbol is reserved</b> to designate characters that are to be deleted (see description below) and should not be used on your typewriter, if it has such a type slug. 
-- It should be noted that one of the typewriters with which the code was developed  (1968 Olivetti Underwood Lettera 33) doesn’t have specific type slugs for numbers zero (0) and one (1). After the OCR step, the Python code will interpret whether the surrounding characters are also digits 
-  and assign the values to instances of uppercase “O” and lowercase “L” accordingly. It also converts the uppercase “O” into zero if it is 
-  in one of the closing RTF formatting commands (e.g. \iO is changed to \i0). Even if your typewriter has type slugs for zero and one, make sure that they are very distinct in appearance from the uppercase “O” and lowercase “L” in order to ensure good OCR accuracy. Otherwise, just use the letters instead. Also, the <b>equal sign</b> on the typewriter is interpreted as a <b>backslash</b> if it is followed by a letter or an RTF escape (\\' (ASCII rtf character escape), \\- (hyphenation point) or \\_ (nonbreaking hyphen)), which is useful in RTF commands and escape codes. For an in-depth explanation of all the most common RTF commands and escapes, please consult: https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html. 
-- To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, the use of curly brackets "{}" is disabled and "=par" is changed for "\par\pard" after OCR ("=" is used as there are no backslashes on typewriters). This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>" in the first line of the image above) are returned to their default values automatically when a new paragraph is started by typing "=par" on the typewriter.
-- In the <b>advanced RTF mode</b>, the use of two successive parentheses "(( and ))" is translated to curly braces "{ and }", respectively, in the "get_predictions.py" Python code. Also, "=par" is changed to "\par" in the advanced RTF mode (and not to "\par\pard" as in the basic RTF mode). This allows more flexibility and the use of the curly brackets already limits the scope of the RTF commands, so there is no need to have a "\pard" added automatically. The image below illustrates how to use the parentheses in RTF commands in the advanced RTF mode. 
+- A deep learning model trained with a specific handwriting is unlikely to generalize well to other handwritings. Also, I would advise you to keep your dataset private, as it would in theory be possible to reverse engineer it in order to generate text with your handwriting. <b>For this reason, I encourage you to use another handwriting than your official handwriting, as an added precaution.</b>
+- The Scriptreader pages from PrintANotebook need to be used, and the individual letters need to be written within the horizontal boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 dpi</b>, with the US Letter page size setting and the text facing the top of the page, as the black squares will be used to automatically align the pages. You should refrain from writing near the dark squares to allow for the alignment to be unimpeded by any artifacts.  
 
-![Image RTF advanced mode](https://github.com/LPBeaulieu/Typewriter-OCR-TintypeText/blob/main/TintypeText%20advanced%20rtf%20mode%20image.jpg)<hr>
+- Make sure that all of your characters are very distinct from one another. I suggest using bars or dots in the zeros and writings the "1"
+the way you see it displayed on screen, so that it isn't confused with a lowercase "l".
 
-- It is recommended to include a space between your text and the parentheses (single or double, see image above), to reduce segmentation issues due to staggered character rectangles. The Python code automatically removes these spaces (if present) in the final RTF document (see image above). 
+- Also, the code is compatible with RTF commands (see example above) so you will need to train the model to recognize hand-drawn backslashes as well if you wish to include formatting elements such as tabs, bold, new lines and paragraphs, for instance. For an in-depth explanation of all the most common RTF commands and escapes, please consult: https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html. 
 
-Despite these issues, the code has successfully located characters (segmentation step) on lines with at least 5 successive letters with a success 
-rate above 99.99% for the training/validation data consisting of over 25,000 characters. The only issue reported with the training/validation 
-data was an omitted period. As for the OCR accuracy, it was consistently above 99.8% regardless of the hyperparameters investigated (other than kernel size), provided
-a good-sized dataset is used for training. 
+- To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, the use of curly brackets "{}" is disabled and "\par" is changed for "\par\pard\tab" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values, and a tab is included automatically when a new paragraph is started by writing "\par". The <b>advanced RTF mode</b>, just interprets the RTF commands as you write them.
+
+My preliminary tests with 17 000 characters of training data (28 pages
 
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
 The following instructions will be provided in great detail, as they are intended for a broad audience and will
-allow to run a copy of <b>Tintype¶Text</b> on a local computer. Here is a link to an instructional video explaining the steps 1 through 8 described below: https://www.youtube.com/watch?v=FG9WUW6q3dI&list=PL8fAaOg_mhoEZkbQuRgs8MN-QSygAjdil&index=2.
+allow to run a copy of <b>ScriptReader</b> on a local computer. Here is a link to an instructional video explaining the steps 1 through 8 described below: https://www.youtube.com/watch?v=FG9WUW6q3dI&list=PL8fAaOg_mhoEZkbQuRgs8MN-QSygAjdil&index=2.
 
 The paths included in the code are formatted for Unix (Linux) operating systems (OS), so the following instructions 
 are for Linux OS environments.
@@ -72,45 +58,39 @@ are for Linux OS environments.
 sudo snap install atom --classic
 ```
 
-<b>Step 2</b>- Create a virtual environment (called <i>env</i>) in your working folder:
+<b>Step 2</b>- Install <b>PyTorch</b> (Required Fastai library to convert images into a format usable for deep learning) using the following command (or the equivalent command found at https://pytorch.org/get-started/locally/ suitable to your system):
 ```
-python3 -m venv env
-```
-
-<b>Step 3</b>- Activate the <i>env</i> virtual environment <b>(you will need to do this step every time you use the Python code files)</b> 
-in your working folder:
-```
-source env/bin/activate
+pip3 install torch torchvision torchaudio
 ```
 
-<b>Step 4</b>- Install <b>PyTorch</b> (Required Fastai library to convert images into a format usable for deep learning) using the following command (or the equivalent command found at https://pytorch.org/get-started/locally/ suitable to your system):
+<b>Step 3</b>- Install the <i>CPU-only</i> version of <b>Fastai</b> (Deep Learning Python library, the CPU-only version suffices for this application, as the character images are very small in size):
 ```
-pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-```
-
-<b>Step 5</b>- Install the <i>CPU-only</i> version of <b>Fastai</b> (Deep Learning Python library, the CPU-only version suffices for this application, as the character images are very small in size):
-```
-pip install fastai
+py -m pip install fastai
 ```
 
-<b>Step 6</b>- Install <b>OpenCV</b> (Python library for image segmentation):
+<b>Step 4</b>- Install <b>OpenCV</b> (Python library for image segmentation):
 ```
-pip install opencv-python
-```
-
-<b>Step 7</b>- Install <b>alive-Progress</b> (Python module for a progress bar displayed in command line):
-```
-pip install alive-progress
+py -m pip install opencv-python
 ```
 
-<b>Step 8</b>- Create the folder "OCR Raw Data" in your working folder:
+<b>Step 5</b>- Install <b>alive-Progress</b> (Python module for a progress bar displayed in command line):
+```
+py -m pip install alive-progress
+```
+
+<b>Step 6</b>- Install <b>glob</b> (Python module used to automatically retrieve the cropped character image pixel size):
+```
+py -m pip install glob2
+```
+
+<b>Step 7</b>- Create the folder "OCR Raw Data" in your working folder:
 ```
 mkdir "OCR Raw Data" 
 ```
-<b>Step 9</b>- You're now ready to use <b>Tintype¶Text</b>! 🎉
+<b>Step 9</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
 ## 🎈 Usage <a name="usage"></a>
-There are four different Python code files that are to be run in sequence. You can skip ahead to file 4 ("get_predictions.py") if you will be using one of the models in the Google Drive links above. You can find instructions for every Python file in the TintypeText - Typewriter Optical Character Recognition (OCR) playlist on my YouTube channel: https://www.youtube.com/playlist?list=PL8fAaOg_mhoEZkbQuRgs8MN-QSygAjdil.<br><br>
+There are four different Python code files that are to be run in sequence. You can skip ahead to file 4 ("get_predictions.py") if you will be using one of the models in the Google Drive links above. You can find instructions for every Python file in the ScriptReader playlist on my YouTube channel: **The link will be posted when the videos are uploaded**.<br><br>
 <b>File 1: "create_rectangles.py"</b>- This Python code enables you to see the segmentation results (the green rectangles delimiting
 the individual characters on the typewritten image) and then write a ".txt" file with the correct labels for each rectangle. The mapping
 of every rectangle to a label will allow to generate a dataset of character images with their corresponding labels. The typewriter
@@ -149,7 +129,7 @@ Importantly, <b>such ".txt" files should be created, modified and saved exclusiv
 ![Image folder tree structure](https://github.com/LPBeaulieu/TintypeText/blob/main/Folder%20tree%20structure%20image.jpg)<hr>
 The image above shows the folder tree structure of your working folder (above), along with the label subfolders within the "Dataset" folder (below).
  
-  <br><b>File 3: "train_model.py"</b>- This code will train a convoluted neural network deep learning model from the labeled character images 
+  <br><b>File 3: "train_model.py"</b>- This code will train a convolutional neural network deep learning model from the labeled character images 
   within the "Dataset" folder. It will also provide you with the accuracy of the model in making OCR predictions, which will be displayed
   in the command line for every epoch (run through the entire dataset). The default hypeparameters (number of epochs=3, batch size=64, 
   learning rate=0.005, kernel size=5) were optimal and consistently gave OCR accuracies above 99.8%, provided a good-sized dataset is used (above 25,000 characters).  
