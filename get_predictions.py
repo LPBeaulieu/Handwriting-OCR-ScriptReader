@@ -4,6 +4,7 @@
 #designetes whether the page is even or odd numbered, with the
 #file names for even-numbered pages starting with "back".
 
+from fastai.vision.all import *
 import cv2
 import os
 import shutil
@@ -17,14 +18,87 @@ import math
 cwd = os.getcwd()
 
 #The list "JPEG_file_names" is populated with the ".jpg" file names in
-#the "Training&Validation Data" folder.
-JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cwd,
-"Training&Validation Data"))) if file_name[-4:] == ".jpg"])
+#the "OCR Raw Data" folder.
+front_JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cwd,
+"OCR Raw Data"))) if (file_name[:4].lower()!="back" and file_name[-4:] == ".jpg")])
+
+#The code is generating cropped character images from the image files listed
+#in the "JPEG_file_names" list and store them in an image folder. These cropped
+#character images will be deleted further on in the code (see comments below)
+#and the image folder name is extracted from the first image name in the
+#"JPEG_file_names" list, including all characters up to the last hyphen
+#(e.g. "Alice's Adventures in Wonderland Chapter 1-0001.jpg" would
+#give the following extracted name: "Alice's Adventures in Wonderland Chapter 1")
+
+if front_JPEG_file_names not in [None, []]:
+    hyphen_matches = re.finditer("-", front_JPEG_file_names[0])
+    hyphen_indices = []
+    for match in hyphen_matches:
+        hyphen_indices.append(match.start())
+    OCR_text_file_name = front_JPEG_file_names[0][:hyphen_indices[-1]]
+
+
+#The list "back_JPEG_file_names" is populated with the ".jpg" file names in
+#the "OCR Raw Data" folder.
+back_JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cwd,
+"OCR Raw Data"))) if (file_name[:4].lower()=="back" and file_name[-4:] == ".jpg")])
+
+if back_JPEG_file_names not in [None, []]:
+    #The user has simply reversed the stack of papers into the multi-
+    #page scanner, resulting in the page numbers being reversed.
+    #The "sort()" method will put them in the correct sequence.
+    back_JPEG_file_names.sort(reverse=True)
+    hyphen_matches = re.finditer("-", back_JPEG_file_names[0])
+    hyphen_indices = []
+    for match in hyphen_matches:
+        hyphen_indices.append(match.start())
+    OCR_text_file_name = back_JPEG_file_names[0][4:hyphen_indices[-1]].strip()
+
+#The folder "OCR Predictions" is created in the working folder, if
+#not already present.
+path = os.path.join(cwd,  "OCR Predictions",  OCR_text_file_name)
+if not os.path.exists(path):
+    os.makedirs(path)
+
+#The list "JPEG_file_name" is populated with the paths for the scan images,
+#intercalating the back pages after the front pages (if applicable).
+JPEG_file_names = []
+if (front_JPEG_file_names not in [None, []] and back_JPEG_file_names not in [None, []] and
+len(front_JPEG_file_names) >= len(back_JPEG_file_names)):
+    for i in range(len(front_JPEG_file_names)):
+        JPEG_file_names.append(front_JPEG_file_names[i])
+        try:
+            JPEG_file_names.append(back_JPEG_file_names[i])
+        except IndexError:
+            pass
+elif (front_JPEG_file_names not in [None, []] and back_JPEG_file_names not in [None, []] and
+len(front_JPEG_file_names) < len(back_JPEG_file_names)):
+    for i in range(len(back_JPEG_file_names)):
+        try:
+            JPEG_file_names.append(front_JPEG_file_names[i])
+        except IndexError:
+            pass
+        JPEG_file_names.append(back_JPEG_file_names[i])
+
+elif front_JPEG_file_names not in [None, []] and back_JPEG_file_names in [None, []]:
+    for i in range(len(front_JPEG_file_names)):
+        JPEG_file_names.append(front_JPEG_file_names[i])
+
+elif front_JPEG_file_names in [None, []] and back_JPEG_file_names not in [None, []]:
+    for i in range(len(back_JPEG_file_names)):
+        JPEG_file_names.append(back_JPEG_file_names[i])
+
+#Import the convoluted neural network (cnn) deep learning model for OCR prediction.
+#My optimal model trained on 26 pages of typewritten text using a 1968 Olivetti Underwood Lettra 33 typewriter,
+#with a batch size of 64, a learning rate of 0.005 and 3 epochs of training yielded a validation accuracy
+#of 99.96%. The average validation accuracy for 4 training runs with the same hyperparameters mentioned above
+#is 99.90% and the optimal model (99.96%) was selected and named Model_Olivetti_1968_Underwood_Lettra_33_acc9996
+learn = load_learner('handwriting_OCR_cnn_model')
 
 print("\nCurrently processing a total of " + str(len(JPEG_file_names)) +
 ' JPEG scanned images of handwritten text. ' +
 'For best results, these should be scanned as JPEG images on a ' +
-'flatbed scanner at a resolution of 300 dpi.\n')
+'multipage scanner at a resolution of 300 dpi with US Letter paper size setting.\n')
 
 #The number of inches (generated with PrintANotebook)
 #in-between every dot will allow the code to determine
@@ -162,14 +236,19 @@ if x_overlap == None:
 if y_overlap == None:
     y_overlap = round(0.75*lines_between_text*pixels_between_dots)
 
+#The "character_index" will keep track of the index of every
+#character in each of the pages of the dataset, so that every
+#character of a given category has a different file name.
+character_index = 0
 
-#This code obtains the individual character coordinates from the image files
-#listed in the "JPEG_file_names" list and generates JPEG images with overlaid
-#character rectangles, named after the original files, but with the added
-#"with character rectangles" suffix.
-with alive_bar(len(JPEG_file_names)) as bar:
+with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
+    f.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
+    #This code obtains the individual character coordinates from the image files
+    #listed in the "JPEG_file_names" list and generates JPEG images with overlaid
+    #character rectangles, named after the original files, but with the added
+    #"with character rectangles" suffix.
     for i in range(len(JPEG_file_names)):
-
+        print(f'\nCurrently processing image entitled: "{JPEG_file_names[i]}"\n')
         #The "image_top_margin_y_pixel" and
         #"image_bottom_margin_y_pixel" variables
         #are initialized as the starting values
@@ -643,11 +722,167 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 [chars_x_y_coordinates[j][k][1][0] + custom_x_overlap_right,
                 chars_x_y_coordinates[j][k][1][1] + custom_y_overlap_bottom]]
 
-
-
-
         if not os.path.exists(os.path.join(cwd, "Page image files with rectangles")):
             os.makedirs(os.path.join(cwd, "Page image files with rectangles"))
         (cv2.imwrite(os.path.join(cwd, 'Page image files with rectangles', JPEG_file_names[i][:-4] +
         ' with character rectangles.jpg'), text_image_copy))
-        bar()
+
+        #An ".rtf" file is created and a basic document prolog is added. The closing curly bracket (}) is
+        #added at the very end of the code, when the "for JPEG_file_name in image names" loop is complete.
+        #For further information on ".rtf" commands, please consult the RTF Pocket Guide, available
+        #free of charge online at the following address:
+        #https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html
+        if i > 0:
+            f.write(" ")
+
+        char_files = []
+        char_index = 0
+        for j in range(len(chars_x_y_coordinates)):
+            for k in range(len(chars_x_y_coordinates[j])):
+                (cv2.imwrite(os.path.join(path, str(char_index) + ".jpg"),
+                text_image_gray[chars_x_y_coordinates[j][k][0][1]:
+                chars_x_y_coordinates[j][k][1][1], chars_x_y_coordinates[j][k][0][0]:
+                chars_x_y_coordinates[j][k][1][0]]))
+                char_files.append(os.path.join(path, str(char_index) + ".jpg"))
+                char_index += 1
+
+        #Generate batch of individual character ".jpg" images to be submitted
+        #to the model for prediction.
+        data_block = DataBlock(
+                        blocks = (ImageBlock, CategoryBlock),
+                        get_items = get_image_files, batch_tfms = Normalize()
+                        )
+        dls = data_block.dataloaders(path, bs=64)
+        dl = learn.dls.test_dl(char_files, shuffle=False)
+        #Obtain softmax results in the form of a one-hot vector per character
+        preds = learn.get_preds(dl=dl)[0].softmax(dim=1)
+        #Determine which is the category index for the argmax of the character one-hot vectors.
+        preds_argmax = preds.argmax(dim=1).tolist()
+        #Convert the category index for each character to its label and assemble
+        #a list of labels by list comprehension.
+        text = [learn.dls.vocab[preds_argmax[j]] for j in range(len(preds_argmax))]
+
+        #If you want to print out the dictionary mapping the labels to the label
+        #indices, uncomment the following line:
+        # print(learn.dls.vocab.o2i)
+
+        #Once the "text" list of predicted characters has been populated, delete the individual
+        #character ".jpg" images used for OCR (you can comment out the following lines of
+        #code should you want to retain them for troubleshooting purposes).
+        for j in range(len(text)):
+            os.remove(os.path.join(path, str(j) + '.jpg'))
+
+        #Substitute the actual character labels for the labels that were written in long
+        #form for compatibility reasons.
+        quote_open = False
+        for j in range(len(text)-1, -1, -1):
+            #If the label is "empty" (a typo overlaid with a hashtag symbol),
+            #replace those characters with " ". Superfluous spaces are removed at the end of the code
+            #(text = "".join(text).replace("  ", " ")).
+            if text[j] == "empty":
+                text[j] = ""
+            #If the label is a "space", it is replaced with " ".
+            elif text[j] == "space":
+                text[j] = " "
+            #If the label is "forward slash", it is replaced with a forward slash.
+            elif text[j] == "forward slash":
+                text[j] = "/"
+            #If the label is "period", it is replaced with ".".
+            elif text[j] == "period":
+                text[j] = "."
+
+        for j in range(len(text)):
+            #If the label is "double quote" or "'", it is replaced  with the corresponding
+            #directional quote mark. If the "double quote" character is the last character
+            #in the page or if there is a space after "double quote", it will be replaced
+            #with a closing double quote. Otherwise, it will be replaced with an opening double quote.
+            #Conversely, if the single quote is the first character in the page, or if
+            #it is preceded by a space, it will be replaced with an opening single quote.
+            #Otherwise, it will be replaced with a closing single quote.
+            if text[j] == "double quote":
+                if j == len(text)-1 or text[j+1] == " ":
+                    text[j] = "\\'94"
+                else:
+                    text[j] = "\\'93"
+            elif text[j] == "'" and text[j-1] != "\\":
+                if j == 0 or text[j-1] == " ":
+                    text[j] = "\\'91"
+                else:
+                    text[j] = "\\'92"
+
+        #The following "for" loop removes spaces before and after hyphens, to
+        #ensure that hyphenated words do not include spaces.
+        for j in range(1, len(text)-1):
+            if text[j] in ["–","—","—", "-"] and text[j-1].strip() == "":
+                text[j-1] = ""
+            elif text[j] in ["–","—","—", "-"] and text[j+1].strip() == "":
+                text[j+1] = ""
+
+        '''DEFAULT (BASIC) RTF FORMATTING MODE'''
+        #Join the elements of the "text" list and perform a series of string substitutions
+        #to yield the final text and write it as a ".rtf" file. The following line replaces
+        #every instance of at least one successive space with a single space, and then replaces
+        #"\par" with "\par\pard", to set the new paragraph's formatting to the default settings.
+        #This way, if you centered the previous paragraph (\qc), you don't need to remember
+        #to set the next paragraph to the default alignment (\ql) by adding a "\pard".
+        #For full rtf functionalities (without this last simplification), comment the next
+        #line out and activate the line after it instead.
+        text = ("".join(text).replace(r"\par", r"\par\pard").replace(r"\bO", r"\b0 ")
+        .replace(r"\iO", r"\i0 ").replace(r"\scapsO", r"\scaps0 ")
+        .replace(r"\strikeO", r"\strike0 ").replace(r"\ulO", r"\ul0 ").replace(" .", ".")
+        .replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace("( ", "(")
+        .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
+
+
+        '''ADVANCED RTF FORMATTING MODE'''
+        #The following line of code is identical to the preceding one, except that there are no
+        #substitutions of "\par\pard" for "\par", and curly brackets ({}) can be used in
+        #formatting of the rtf document. Double parentheses will be converted to the
+        #corresponding curly brackets. Should you want to use the advanced rtf formatting mode,
+        #simply comment out the preceding line of code and activate the following one.
+        # text = ("".join(text).replace(r"\bO", r"\b0 ").replace(r"\iO", r"\i0 ")
+        # .replace(r"\scapsO", r"\scaps0 ").replace(r"\strikeO", r"\strike0 ").replace(r"\ulO", r"\ul0 ")
+        # .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace(" ?", "?")
+        # .replace(" !", "!").replace("( ", "(").replace(" )", ")").replace("((", "{").replace("))", "}"))
+
+
+        #The RTF escapes are substituted for the symbols to allow for adequate representation within
+        #the RTF file.
+        rtf_escapes = [['…', r"\'85"], ['†', r"\'86"], ['‡', r"\'87"],  ['✕', r"\'d7"], ['\+', r"\'2b"],
+        ['⋅', r"\'b7"], ['·', r"\'b7"], ['÷', r"\'f7"], ['/', r"\'2f"], ['>', r"\'3e"], ['<', r"\'3c"],
+        ['¢', r"\'a2"], ['\$', r"\'24"], ['€', r"\'80"], ['¤', r"\'a4"], ['¥', r"\'a5"],  [r'\[', r"\'5b"],
+        ['\]', r"\'5d"], ['\^', r"\'5e"], ['ˆ', r"\'88"], ['`', r"\'60"], ['´', r"\'b4"], ['”', r"\'94"],
+        ['\|', r"\'7c"], ['¦', r"\'a6"], ['£', r"\'a3"], ['″', r"\'22"], ['%', r"\'25"], ['‰', r"\'89"],
+        ['Š', r"\'8a"], ['š', r"\'9a"], ['‹', r"\'8b"], ['›', r"\'9b"], ['Œ', r"\'8c"], ['œ', r"\'9c"],
+        ['Ÿ', r"\'9f"], ['Ž', r"\'8e"], ['ž', r"\'9e"], ['°', r"\'b0"], ['#', r"\'23"], ['&', r"\'26"],
+        ['©', r"\'a9"], ['™', r"\'99"], ['•', r"\'95"], ['@', r"\'40"], [r'\*', r"\'2a"], ['∼', r"\'98"],
+        ['±', r"\'b1"], ['€', r"\'80"], ['͵', r"\'80"], ['ƒ', r"\'83"], ['„', r"\'84"], ['〃', r"\'22"],
+        ['¶', r"\'b6"], ['®', r"\'ae"], ['§', r"\'a7"], ['«', r"\'ab"], ['»', r"\'bb"], ['¡', r"\'a1"],
+        ['¿', r"\'bf"], ['¨', r"\'a8"], ['ª', r"\'aa"], ['º', r"\'ba"], ['¬', r"\'ac"], ['¯', r"\'af"],
+        ['¼', r"\'bc"], ['½', r"\'bd"], ['¾', r"\'be"], ['¹', r"\'b9"], ['²', r"\'b2"], ['³', r"\'b3"],
+        ['µ', r"\'b5"], ['¸', r"\'b8"], ['À', r"\'c0"], ['Á', r"\'c1"], ['Â', r"\'c2"], ['Ã', r"\'c3"],
+        ['Ä', r"\'c4"], ['Å', r"\'c5"], ['Æ', r"\'c6"], ['Ç', r"\'c7"], ['È', r"\'c8"], ['É', r"\'c9"],
+        ['Ê', r"\'ca"], ['Ë', r"\'cb"], ['Ì', r"\'cc"], ['Í', r"\'cd"], ['Î', r"\'ce"], ['Ï', r"\'cf"],
+        ['Ð', r"\'d0"], ['Ñ', r"\'d1"], ['Ò', r"\'d2"], ['Ó', r"\'d3"], ['Ô', r"\'d4"], ['Õ', r"\'d5"],
+        ['Ö', r"\'d6"], ['Ø', r"\'d8"], ['Ù', r"\'d9"], ['Ú', r"\'da"], ['Û', r"\'db"], ['Ü', r"\'dc"],
+        ['Ý', r"\'dd"], ['Þ', r"\'de"], ['ß', r"\'df"], ['à', r"\'e0"], ['á', r"\'e1"], ['â', r"\'e2"],
+        ['ã', r"\'e3"], ['ä', r"\'e4"], ['å', r"\'e5"], ['æ', r"\'e6"], ['ç', r"\'e7"], ['è', r"\'e8"],
+        ['é', r"\'e9"], ['ê', r"\'ea"], ['ë', r"\'eb"], ['ì', r"\'ec"], ['í', r"\'ed"], ['î', r"\'ee"],
+        ['ï', r"\'ef"], ['ð', r"\'f0"], ['ñ', r"\'f1"], ['ò', r"\'f2"], ['ó', r"\'f3"], ['ô', r"\'f4"],
+        ['õ', r"\'f5"], ['ö', r"\'f6"], ['ø', r"\'f8"], ['ù', r"\'f9"], ['ú', r"\'fa"], ['û', r"\'fb"],
+        ['ü', r"\'fc"], ['ý', r"\'fd"], ['þ', r"\'fe"], ['ÿ', r"\'ff"], ["\-", r"\'2d"], ["—", r"\'97"],
+        ['—', r"\'96"], ['_', r"\'5f"], ["‘", r"\'91"], ["’", r"\'92"], ['“', r"\'93"], ['=', r"\'3d"],
+        ['–', r"\'96"]]
+        for escape in rtf_escapes:
+            text = re.sub(escape[0], escape[1], text)
+
+        text = re.sub('[" "]+', " ", text).replace(" \\'94", "\\'94").replace(" \\'92", "\\'92")
+                
+
+        f.write(text)
+
+    #An ".rtf" file was created and a basic document prolog was added earlier, followed by the
+    #contents of the "text" string. The closing curly bracket (}) is now added at the very end
+    #of the ".rtf" document, as the "for JPEG_file_name in JPEG_file_names" loop is complete. The "}"
+    #matches the first "{" of the prolog.
+    f.write("}")

@@ -24,7 +24,7 @@ JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cw
 print("\nCurrently processing a total of " + str(len(JPEG_file_names)) +
 ' JPEG scanned images of handwritten text. ' +
 'For best results, these should be scanned as JPEG images on a ' +
-'flatbed scanner at a resolution of 300 dpi.\n')
+'multipage scanner at a resolution of 300 dpi with US Letter paper size setting.\n')
 
 #The number of inches (generated with PrintANotebook)
 #in-between every dot will allow the code to determine
@@ -611,13 +611,13 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 #If the "x_dimension" is lower than "pixels_between_dots", then some pixels need
                 #to be added to "x_overlap" in order for the resulting cropped rectangle to be
                 #of the same dimensions as the others.
-                elif x_dimension < pixels_between_dots and (x_dimension-pixels_between_dots)%2 != 0:
-                    custom_x_overlap_left = -(x_overlap + ((x_dimension-pixels_between_dots)//2))
-                    custom_x_overlap_right = (x_overlap + math.ceil((x_dimension-pixels_between_dots)/2))
+                elif x_dimension < pixels_between_dots and (pixels_between_dots-x_dimension)%2 != 0:
+                    custom_x_overlap_left = -(x_overlap + ((pixels_between_dots-x_dimension)//2))
+                    custom_x_overlap_right = (x_overlap + math.ceil((pixels_between_dots-x_dimension)/2))
 
-                elif x_dimension < pixels_between_dots and (x_dimension-pixels_between_dots)%2 == 0:
-                    custom_x_overlap_left = -(x_overlap + int((x_dimension-pixels_between_dots)/2))
-                    custom_x_overlap_right = (x_overlap + int((x_dimension-pixels_between_dots)/2))
+                elif x_dimension < pixels_between_dots and (pixels_between_dots-x_dimension)%2 == 0:
+                    custom_x_overlap_left = -(x_overlap + int((pixels_between_dots-x_dimension)/2))
+                    custom_x_overlap_right = (x_overlap + int((pixels_between_dots-x_dimension)/2))
                 #If the "x_dimension" is equal to "pixels_between_dots", then no adjustments
                 #need to be made to "x_overlap".
                 elif x_dimension == pixels_between_dots:
@@ -627,19 +627,15 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 if y_dimension > pixels_between_dots and (y_dimension-pixels_between_dots)%2 != 0:
                     custom_y_overlap_top = -(y_overlap - ((y_dimension-pixels_between_dots)//2))
                     custom_y_overlap_bottom = (y_overlap - math.ceil((y_dimension-pixels_between_dots)/2))
-
                 elif y_dimension > pixels_between_dots and (y_dimension-pixels_between_dots)%2 == 0:
                     custom_y_overlap_top = -(y_overlap - int((y_dimension-pixels_between_dots)/2))
                     custom_y_overlap_bottom = (y_overlap - int((y_dimension-pixels_between_dots)/2))
-
-                elif y_dimension < pixels_between_dots and (y_dimension-pixels_between_dots)%2 != 0:
-                    custom_y_overlap_top = -(y_overlap + ((y_dimension-pixels_between_dots)//2))
-                    custom_y_overlap_bottom = (y_overlap + math.ceil((y_dimension-pixels_between_dots)/2))
-
-                elif y_dimension < pixels_between_dots and (y_dimension-pixels_between_dots)%2 == 0:
-                    custom_y_overlap_top = -(y_overlap + int((y_dimension-pixels_between_dots)/2))
-                    custom_y_overlap_bottom = (y_overlap + int((y_dimension-pixels_between_dots)/2))
-
+                elif y_dimension < pixels_between_dots and (pixels_between_dots-y_dimension)%2 != 0:
+                    custom_y_overlap_top = -(y_overlap + ((pixels_between_dots-y_dimension)//2))
+                    custom_y_overlap_bottom = (y_overlap + math.ceil((pixels_between_dots-y_dimension)/2))
+                elif y_dimension < pixels_between_dots and (pixels_between_dots-y_dimension)%2 == 0:
+                    custom_y_overlap_top = -(y_overlap + int((pixels_between_dots-y_dimension)/2))
+                    custom_y_overlap_bottom = (y_overlap + int((pixels_between_dots-y_dimension)/2))
                 elif y_dimension == pixels_between_dots:
                     custom_y_overlap_top = -y_overlap
                     custom_y_overlap_bottom = y_overlap
@@ -664,7 +660,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #files exclusively in WordPad or Text Editor and not a full-fledged word processor, which would insert
         #formatting information that would skew the character count.
         labels = []
-        with open('Training&Validation Data/' + JPEG_file_names[i][:-4] + '.txt', 'r') as f:
+        with open(os.path('Training&Validation Data', JPEG_file_names[i][:-4] + '.txt', 'r')) as f:
             text = f.read()
             character_count = 0
             for char in text:
@@ -704,14 +700,31 @@ with alive_bar(len(JPEG_file_names)) as bar:
                     labels.append("double quote")
                     character_count+=1
                 #If the character in the txt file is a "Д" (Cyrillic Capital Letter De,
-                #Python source code u"\u0434"), "to be deleted" is appended to the list "labels".
-                elif text[character_count] == u"\u03B3":
+                #Python source code u"\u0414"), "to be deleted" is appended to the list "labels".
+                elif text[character_count] == u"\u0414":
                     labels.append("to be deleted")
                     character_count+=1
                 #Other characters get appended to the list.
                 else:
                     labels.append(text[character_count])
                     character_count+=1
+
+        #This "for" loop is needed only to determine how many
+        #squares are found on the actual page ("page_character_index").
+        #This needs to be done before repeating it below, as the user
+        #needs to know how many characters are missing (if applicable),
+        #in the "labels" list derived from the TXT file, before actually
+        #cropping the characters. Otherwise, the user would only get an
+        #error.
+        page_character_index = 0
+        for j in range(len(chars_x_y_coordinates)):
+            for k in range(len(chars_x_y_coordinates[j])):
+                page_character_index += 1
+
+        #As an added quality control step, the length of the list of character coordinates and their labels
+        #are printed on screen. The two lengths should be equivalent, as they both refer to the same characters.
+        print("Length of list 'chars_x_y_coordinates': " + str(page_character_index))
+        print("Length of list 'labels': " + str(len(labels)))
 
         page_character_index = 0
         #Generating the individual character images based on their x and y coordinates (from chars_x_y_coordinates),
@@ -732,18 +745,13 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 page_character_index += 1
                 character_index += 1
 
-        #As an added quality control step, the length of the list of character coordinates and their labels
-        #are printed on screen. The two lengths should be equivalent, as they both refer to the same characters.
-        print("Length of list 'chars_x_y_coordinates': " + str(page_character_index))
-        print("Length of list 'labels': " + str(len(labels)))
-
         bar()
 #The code below removes the folder "to be deleted" and its contents.
 #Otherwise, the model would also train on this category that includes
 #all character rectangles labeled as "@" in the ".txt" files, which
 #represent mistakes in the typing of the dataset on the typewriter
 #(and not "#" overlaid with another character).
-if os.path.exists(cwd + "/Dataset/to be deleted/"):
-    shutil.rmtree(cwd + "/Dataset/to be deleted/")
+if os.path.exists(os.path(cwd, "Dataset", "to be deleted")):
+    shutil.rmtree(os.path(cwd, "Dataset", "to be deleted"))
 
     bar()
