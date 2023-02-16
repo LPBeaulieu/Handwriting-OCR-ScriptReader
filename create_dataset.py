@@ -660,7 +660,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #files exclusively in WordPad or Text Editor and not a full-fledged word processor, which would insert
         #formatting information that would skew the character count.
         labels = []
-        with open(os.path('Training&Validation Data', JPEG_file_names[i][:-4] + '.txt', 'r')) as f:
+        with open(os.path.join('Training&Validation Data', JPEG_file_names[i][:-4] + '.txt'), 'r') as f:
             text = f.read()
             character_count = 0
             for char in text:

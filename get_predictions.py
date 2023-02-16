@@ -9,7 +9,6 @@ import cv2
 import os
 import shutil
 import re
-from alive_progress import alive_bar
 import numpy as np
 import sys
 import math
@@ -827,7 +826,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         #to set the next paragraph to the default alignment (\ql) by adding a "\pard".
         #For full rtf functionalities (without this last simplification), comment the next
         #line out and activate the line after it instead.
-        text = ("".join(text).replace(r"\par", r"\par\pard").replace(r"\bO", r"\b0 ")
+        text = ("".join(text).replace(r"\par", r"\par\pard\tab").replace(r"\bO", r"\b0 ")
         .replace(r"\iO", r"\i0 ").replace(r"\scapsO", r"\scaps0 ")
         .replace(r"\strikeO", r"\strike0 ").replace(r"\ulO", r"\ul0 ").replace(" .", ".")
         .replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace("( ", "(")
@@ -843,7 +842,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         # text = ("".join(text).replace(r"\bO", r"\b0 ").replace(r"\iO", r"\i0 ")
         # .replace(r"\scapsO", r"\scaps0 ").replace(r"\strikeO", r"\strike0 ").replace(r"\ulO", r"\ul0 ")
         # .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace(" ?", "?")
-        # .replace(" !", "!").replace("( ", "(").replace(" )", ")").replace("((", "{").replace("))", "}"))
+        # .replace(" !", "!").replace("( ", "(").replace(" )", ")"))
 
 
         #The RTF escapes are substituted for the symbols to allow for adequate representation within
@@ -877,7 +876,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
             text = re.sub(escape[0], escape[1], text)
 
         text = re.sub('[" "]+', " ", text).replace(" \\'94", "\\'94").replace(" \\'92", "\\'92")
-                
+
 
         f.write(text)
 
