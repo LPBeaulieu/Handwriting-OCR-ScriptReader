@@ -86,7 +86,7 @@ py -m pip install glob2
 ```
 mkdir "OCR Raw Data" 
 ```
-<b>Step 9</b>- You're now ready to use <b>ScriptReader</b>! 🎉
+<b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
 ## 🎈 Usage <a name="usage"></a>
 There are four different Python code files that are to be run in sequence. You can find instructions for every Python file in the ScriptReader playlist on my YouTube channel: **The link will be posted when the videos are uploaded**.<br><br>
