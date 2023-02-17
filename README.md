@@ -32,7 +32,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
   (to crop the individual characters in the handwritten scanned images) and glob2 to automatically retrieve the cropped character image size.
   
 - A deep learning model trained with a specific handwriting is unlikely to generalize well to other handwritings. Also, I would advise you to keep your dataset private, as it would in theory be possible to reverse engineer it in order to generate text with your handwriting. <b>For this reason, I encourage you to use another handwriting than your official handwriting, as an added precaution.</b>
-- The Scriptreader pages from PrintANotebook need to be used, and the individual letters need to be written within the horizontal boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 ppi</b>, with the US Letter page size setting and the text facing the top of the page, as the black squares will be used to automatically align the pages. You should refrain from writing near the dark squares to allow for the alignment to be unimpeded by any artifacts.  
+- The <b>ScriptReader</b> pages from PrintANotebook need to be used, and the individual letters need to be written within the horizontal boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 ppi</b>, with the US Letter page size setting and the text facing the top of the page, as the black squares will be used to automatically align the pages. You should refrain from writing near the dark squares to allow for the alignment to be unimpeded by any artifacts.  
 
 - Make sure that all of your characters are very distinct from one another. I suggest using bars or dots in the zeros and writings the "1"
 the way you see it displayed on screen, so that it isn't confused with a lowercase "l".
@@ -41,7 +41,7 @@ the way you see it displayed on screen, so that it isn't confused with a lowerca
 
 - To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, the use of curly brackets "{}" is disabled and "\par" is changed for "\par\pard\tab" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values, and a tab is included automatically when a new paragraph is started by writing "\par". The <b>advanced RTF mode</b>, just interprets the RTF commands as you write them.
 
-My preliminary tests with 17 000 characters of training data (29 pages of cursive handwriting on the ScriptReader pages, with 0.13 inch dot spacing and double line spacing) gave me an OCR accuracy above 98%, and I am still adding more data to the model, so there is room for improvement.
+My preliminary tests with 17 000 characters of training data (29 pages of cursive handwriting on the <b>ScriptReader</b> pages, with 0.13 inch dot spacing and double line spacing) gave me an OCR accuracy above 98%, and I am still adding more data to the model, so there is room for improvement.
 
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
@@ -88,14 +88,14 @@ mkdir "OCR Raw Data"
 <b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
 ## 🎈 Usage <a name="usage"></a>
-First off, you will need to print some ScriptReader notebook pages, which are special in that they are dot grid pages with line spacing in-between
+First off, you will need to print some <b>ScriptReader</b> notebook pages, which are special in that they are dot grid pages with line spacing in-between
 lines of text, so that there may be enough room to accomodate the ascenders and descenders of your handwriting when performing OCR. Also, these pages have black squares in the top of the page, which help the code to automatically align the pages in order to correct for slight rotation angles (below about 1%) of the scanned images. Please refer to the <b>PrintANotebook</b> github repository for the basics on how to run this application on your system. 
 <br>
 For a basic template, simply pass in "scriptreader:" as an additional argument when running <b>PrintANotebook</b>, with the following parameters after the colon, each separated by additional colons: the number of inches in-between dot grid dots (in inches and in decimal form, but without units):the dot diameter (5 px is a good value): the dot line width (1 px is appropriate): the number of lines in-between the lines of text (2 works well for me, but if your handwriting has marked ascenders and descenders, you might want to go with 3): gutter margin width (in inches and decimal form, but without units, 0.75 is a good setting that allows for you to use a hole punch). 
 <br>
 For example, the following ("scriptreader:0.13:5:1:2:0.75") would mean that there is 0.13 inch in-between dots, the dot diameter is 5 px, the dot line width is 1 px, there are two empty lines in-between every line of text and that the gutter margin measures 0.75 inch.
 
-There are four different Python code files that are to be run in sequence. You can find instructions for every Python file in the ScriptReader playlist on my YouTube channel: **The link will be posted when the videos are uploaded**.<br><br>
+There are four different Python code files that are to be run in sequence. You can find instructions for every Python file in the <b>ScriptReader</b> playlist on my YouTube channel: **The link will be posted when the videos are uploaded**.<br><br>
 <b>File 1: "create_rectangles.py"</b>- This Python code enables you to see the segmentation results (the green rectangles delimiting
 the individual characters on the handwritten scanned image) and then write a ".txt" file with the correct labels for each rectangle. The mapping
 of every rectangle to a label will allow to generate a dataset of character images with their corresponding labels. The handwritten
@@ -141,7 +141,7 @@ Something else to keep in mind when training your CNN model is that your charact
     
 The reason for this is that when you will scan a large document in a multi-page scanner, you will provide your scanner with a file root name (e.g. "my_text-") and the scanner will number them automatically (e.g."my_text-.jpg", "my_text-0001.jpg", "my_text-0002.jpg", "my_text-"0003.jpg", etc.) and the code would then label the subfolder within the "OCR Predictions" folder as "my_text". The OCR prediction results for each page will be added in sequence to the "my_text.rtf" file within the "my_text" subfolder of the "OCR Predictions" folder. Should you ever want to repeat the OCR prediction for a set of JPEG images, it would then be important to remove the "my_text" subfolder before running the "get_predictions.py" code once more, in order to avoid appending more text to the existing "my_text.rtf" file.
   
-When scanning the ScriptReader notebook pages generated with PrintANotebook, you would ideally need to scan them in a multi-page scanner, which is typically found in all-in-one printers. Select 300 ppi resolution, JPEG file format, and the US Letter size settings and first scan the odd-pages (right-hand) by specifying a file name that ends with a hyphen. Once the pages are scanned, you would simply flip the recovered stack of pages and scan the reverse pages (starting with the last one on top of the stack). The code will automatically assemble the left- and right-hand pages in the right order when performing OCR predictions. 
+When scanning the <b>ScriptReader</b> notebook pages generated with PrintANotebook, you would ideally need to scan them in a multi-page scanner, which is typically found in all-in-one printers. Select 300 ppi resolution, JPEG file format, and the US Letter size settings and first scan the odd-pages (right-hand) by specifying a file name that ends with a hyphen. Once the pages are scanned, you would simply flip the recovered stack of pages and scan the reverse pages (starting with the last one on top of the stack). The code will automatically assemble the left- and right-hand pages in the right order when performing OCR predictions. 
         
   <br><b>Well there you have it!</b> You're now ready to convert your handwritten text into digital format! You can now write at the cottage or in the park without worrying about your laptop's battery life and still get your document polished up in digital form in the end! 🎉📖
   
