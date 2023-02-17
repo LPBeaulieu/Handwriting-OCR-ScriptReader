@@ -32,7 +32,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
   (to crop the individual characters in the handwritten scanned images) and glob2 to automatically retrieve the cropped character image size.
   
 - A deep learning model trained with a specific handwriting is unlikely to generalize well to other handwritings. Also, I would advise you to keep your dataset private, as it would in theory be possible to reverse engineer it in order to generate text with your handwriting. <b>For this reason, I encourage you to use another handwriting than your official handwriting, as an added precaution.</b>
-- The Scriptreader pages from PrintANotebook need to be used, and the individual letters need to be written within the horizontal boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 dpi</b>, with the US Letter page size setting and the text facing the top of the page, as the black squares will be used to automatically align the pages. You should refrain from writing near the dark squares to allow for the alignment to be unimpeded by any artifacts.  
+- The Scriptreader pages from PrintANotebook need to be used, and the individual letters need to be written within the horizontal boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 ppi</b>, with the US Letter page size setting and the text facing the top of the page, as the black squares will be used to automatically align the pages. You should refrain from writing near the dark squares to allow for the alignment to be unimpeded by any artifacts.  
 
 - Make sure that all of your characters are very distinct from one another. I suggest using bars or dots in the zeros and writings the "1"
 the way you see it displayed on screen, so that it isn't confused with a lowercase "l".
@@ -130,10 +130,12 @@ Importantly, <b>such ".txt" files should be created, modified and saved exclusiv
 within the "Dataset" folder. It will also provide you with the accuracy of the model in making OCR predictions, which will be displayed
 in the command line for every epoch (run through the entire dataset). The default hypeparameters (number of epochs=3, batch size=64, 
 learning rate=0.005, kernel size=5) were optimal and consistently gave OCR accuracies above 98%, provided a good-sized dataset is used (mine was above 17,000 characters). As this is a simple deep learning task, the accuracy relies more heavily on having good quality segmentation and character images that accurately reflect those that would be found in text. When you obtain a model with good accuracy, you should rename it and do a backup of it along with the "Dataset" folder on which it was trained. If you do change the name of the model file, you also need to update its name in the line 95 of "get_predictions.py":
-  ```
+```
   learn = load_learner('handwriting_OCR_cnn_model')
-  ```
-  <br><b>File 4: "get_predictions.py"</b>- This code will perform OCR on JPEG images of scanned handwritten text (at a resolution of 300 dpi and with the US Letter page size setting) that you will place in the folder "OCR Raw Data". 
+```
+Something else to keep in mind when training your CNN model is that your character images may differ in pixel size than mine. The code uses a CNN with a layer structure that was used to train my model. However, it also calculates and displays on screen the layer structure that would be fitted to your handwriting. Should you encounter any problems when training the model, you could simply replace the contents of line 90 in train_model.py with what is displayed in the PowerShell window after "CNN layer structure:".
+
+  <br><b>File 4: "get_predictions.py"</b>- This code will perform OCR on JPEG images of scanned handwritten text (at a resolution of 300 ppi and with the US Letter page size setting) that you will place in the folder "OCR Raw Data". 
   
 <b>Please note that all of the JPEG file names in the "OCR Raw Data" folder must contain at least one hyphen ("-") in order for the code to properly create subfolders in the "OCR Predictions" folder. These subfolders will contain the rich text format (RTF) OCR conversion documents.</b> 
     
