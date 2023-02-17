@@ -15,8 +15,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
 
 <p align="left"> <b>ScriptReader</b> is a tool enabling you to convert scanned handwritten pages (in JPEG image format) into rich text format (RTF) 
   documents, complete with formatting elements such as text alignment, paragraphs, <u>underline</u>, <i>italics</i>, <b>bold</b> and <del>strikethrough</del>. </p>
-<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (grid cells containing errors that are filled in with ink)
-  automatically get filtered out, and do not appear in the final RTF text. This feature, when combined with erasable biodegradable fountain pen ink (see https://www.linkedin.com/feed/update/urn:li:activity:7027469654725947392/) further enhances the usefulness of the notebooks you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!
+<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (square dot grid cells containing mistakes, which are filled in with ink) automatically get filtered out, and do not appear in the final RTF text. This feature, when combined with the erasable biodegradable fountain pen ink that I have disclosed earlier (see https://www.linkedin.com/feed/update/urn:li:activity:7027469654725947392/) further enhances the usefulness of the notebooks you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!
 <br> 
 </p>
 
@@ -89,6 +88,13 @@ mkdir "OCR Raw Data"
 <b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
 ## 🎈 Usage <a name="usage"></a>
+First off, you will need to print some ScriptReader notebook pages, which are special in that they are dot grid pages with line spacing in-between
+lines of text, so that there may be enough room to accomodate the ascenders and descenders of your handwriting when performing OCR. Also, these pages have black squares in the top of the page, which help the code to automatically align the pages in order to correct for slight rotation angles (below about 1%) of the scanned images. Please refer to the <b>PrintANotebook</b> github repository for the basics on how to run this application on your system. 
+<br>
+For a basic template, simply pass in "scriptreader:" as an additional argument when running <b>PrintANotebook</b>, with the following parameters after the colon, each separated by additional colons: the number of inches in-between dot grid dots (in inches and in decimal form, but without units):the dot diameter (5 px is a good value): the dot line width (1 px is appropriate): the number of lines in-between the lines of text (2 works well for me, but if your handwriting has marked ascenders and descenders, you might want to go with 3): gutter margin width (in inches and decimal form, but without units, 0.75 is a good setting that allows for you to use a hole punch). 
+<br>
+For example, the following ("scriptreader:0.13:5:1:2:0.75") would mean that there is 0.13 inch in-between dots, the dot diameter is 5 px, the dot line width is 1 px, there are two empty lines in-between every line of text and that the gutter margin measures 0.75 inch.
+
 There are four different Python code files that are to be run in sequence. You can find instructions for every Python file in the ScriptReader playlist on my YouTube channel: **The link will be posted when the videos are uploaded**.<br><br>
 <b>File 1: "create_rectangles.py"</b>- This Python code enables you to see the segmentation results (the green rectangles delimiting
 the individual characters on the handwritten scanned image) and then write a ".txt" file with the correct labels for each rectangle. The mapping
