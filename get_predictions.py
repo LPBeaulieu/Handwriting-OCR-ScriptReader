@@ -94,6 +94,8 @@ elif front_JPEG_file_names in [None, []] and back_JPEG_file_names not in [None, 
 #is 99.90% and the optimal model (99.96%) was selected and named Model_Olivetti_1968_Underwood_Lettra_33_acc9996
 learn = load_learner('handwriting_OCR_cnn_model')
 
+
+
 print("\nCurrently processing a total of " + str(len(JPEG_file_names)) +
 ' JPEG scanned images of handwritten text. ' +
 'For best results, these should be scanned as JPEG images on a ' +
@@ -261,7 +263,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         image_bottom_margin_y_pixel = bottom_margin_y_pixel
 
         #The image is loaded using the "cv2.imread" method.
-        text_image = cv2.imread(os.path.join(cwd, "Training&Validation Data", str(JPEG_file_names[i])))
+        text_image = cv2.imread(os.path.join(cwd, "OCR Raw Data", str(JPEG_file_names[i])))
         #A copy of the image is made in order to add the character rectangles to it.
         text_image_copy = text_image.copy()
         #The width of the image is determined. This will be useful when determining
