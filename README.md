@@ -1,7 +1,7 @@
 # ScriptReader
 This handwriting OCR application can convert JPEG handwritten text images into RTF documents, while removing typos for you!
 
-![Image RTF basic mode](https://github.com/LPBeaulieu/Typewriter-OCR-TintypeText/blob/main/TintypeText%20basic%20rtf%20mode%20screenshot.jpg)
+![Quote OCR Result](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/Quote%20OCR%20result.png)
 <h3 align="center">ScriptReader</h3>
 <div align="center">
   
@@ -50,7 +50,7 @@ My preliminary tests with 17 000 characters of training data (29 pages of cursiv
 The following instructions will be provided in great detail, as they are intended for a broad audience and will
 allow to run a copy of <b>ScriptReader</b> on a local computer.
 
-The instructions below are for Windows operating systems, but the code should run nicely on Linux and Mac-OS as well.
+The instructions below are for Windows operating systems **I am still debugging the code for it to work on Windows**, but the code should run nicely on Linux and Mac-OS as well.
 
 <b>Step 1</b>- Hold the "Shift" key while right-clicking in your working folder and select "Open PowerShell window here" to access the PowerShell in your working folder. Then, install the <b>Atom</b> text editor to make editing the code easier:
 ```
@@ -96,8 +96,11 @@ of every rectangle to a label will allow to generate a dataset of character imag
 page images overlaid with the character rectangles are stored in the "Page image files with rectangles" folder, which is created
 automatically by the code.
 
-![Image txt file processing](https://github.com/LPBeaulieu/TintypeText/blob/main/txt%20file%20example.jpg)<hr>
-The image above illustrates the format of the ".txt" file listing all of the character rectangle labels. Any spaces (empty dot grid cells) on your scanned handwritten page need to be represented by the Cyrillic Capital Letter <i>I</i> ("И"). Furthermore, any typos on your training data, which are erroneous handwritten letters of which the dot grid cell was later darkened will need to be reported with the Cyrillic Capital Letter <i>Be</i> ("Б"). Finally, if there are artifacts on the page or if you wrote a character out of frame of a given dot grid cell, you need to designate it with the Cyrillic Capital Letter <i>De</i> ("Д"). All the other character rectangles are represented by their own characters in the ".txt" file. 
+![Character Segmentation](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/character%20segmentation.png)<hr>
+The figure above shows the segmentation results (green rectangles) for the left-hand scanned image. In reality, some overlap is allowed horizontally and vertically in order to fully include the characters. The red rectangles show where the position where the code has detected the black squares on top of the page, which allows for the automatic alignment of the page. The blue rectangles show where the code has screened in order to detect the black rectangles. It is therefore important that you avoid including very long titles or any writing in these regions of your notebook pages.  
+
+![Image txt file processing](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/generating%20the%20text%20file.png)<hr>
+The image above illustrates the format of the ".txt" file listing all of the character rectangle labels. Any spaces (empty dot grid cells) on your scanned handwritten page need to be represented by the Cyrillic Capital Letter <i>I</i> ("И"). Furthermore, any typos on your training data, which are erroneous handwritten letters of which the dot grid cell was later darkened will need to be reported with the Cyrillic Capital Letter <i>Be</i> ("Б"). Finally, if there are artifacts on the page or if you wrote a character out of frame of a given dot grid cell, you need to designate it with the Cyrillic Capital Letter <i>De</i> ("Д"). In this case, I added the "Д" symbol for the zeros on the seventh line, as I forgot to put the bars in the digits, which would certainly lead to some confusion with a capital "O". All the other character rectangles are represented by their own characters in the ".txt" file. 
 <br><br>
 Importantly, <b>such ".txt" files should be created, modified and saved exclusively in basic text editors</b> (such as Notepad on Windows or Text Editor on Ubuntu), as more elaborate word processors would include extra formatting information that would interfere with the correct mapping of the character rectangles to their labels in the ".txt" file.
 
@@ -117,13 +120,10 @@ Importantly, <b>such ".txt" files should be created, modified and saved exclusiv
  
   <b>Once you're done validating</b> the individual ".txt" files, you can delete the "Dataset" folder once more, add <b>all of the ".txt" files along with their corresponding JPEG images</b> to the "Training&Validation Data" folder and run the "create_dataset.py" code to get your complete dataset! 
   
-![Image folder tree structure](https://github.com/LPBeaulieu/TintypeText/blob/main/Folder%20tree%20structure%20image.jpg)<hr>
-The image above shows the folder tree structure of your working folder (above), along with the label subfolders within the "Dataset" folder (below).
- 
-  <br><b>File 3: "train_model.py"</b>- This code will train a convolutional neural network deep learning model from the labeled character images 
-  within the "Dataset" folder. It will also provide you with the accuracy of the model in making OCR predictions, which will be displayed
-  in the command line for every epoch (run through the entire dataset). The default hypeparameters (number of epochs=3, batch size=64, 
-  learning rate=0.005, kernel size=5) were optimal and consistently gave OCR accuracies above 98%, provided a good-sized dataset is used (mine was above 17,000 characters). As this is a simple deep learning task, the accuracy relies more heavily on having good quality segmentation and character images that accurately reflect those that would be found in text. When you obtain a model with good accuracy, you should rename it and do a backup of it along with the "Dataset" folder on which it was trained. If you do change the name of the model file, you also need to update its name in the line 95 of "get_predictions.py":
+<br><b>File 3: "train_model.py"</b>- This code will train a convolutional neural network deep learning model from the labeled character images 
+within the "Dataset" folder. It will also provide you with the accuracy of the model in making OCR predictions, which will be displayed
+in the command line for every epoch (run through the entire dataset). The default hypeparameters (number of epochs=3, batch size=64, 
+learning rate=0.005, kernel size=5) were optimal and consistently gave OCR accuracies above 98%, provided a good-sized dataset is used (mine was above 17,000 characters). As this is a simple deep learning task, the accuracy relies more heavily on having good quality segmentation and character images that accurately reflect those that would be found in text. When you obtain a model with good accuracy, you should rename it and do a backup of it along with the "Dataset" folder on which it was trained. If you do change the name of the model file, you also need to update its name in the line 95 of "get_predictions.py":
   ```
   learn = load_learner('handwriting_OCR_cnn_model')
   ```
