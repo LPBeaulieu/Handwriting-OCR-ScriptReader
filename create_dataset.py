@@ -751,7 +751,5 @@ with alive_bar(len(JPEG_file_names)) as bar:
 #all character rectangles labeled as "@" in the ".txt" files, which
 #represent mistakes in the typing of the dataset on the typewriter
 #(and not "#" overlaid with another character).
-if os.path.exists(os.path(cwd, "Dataset", "to be deleted")):
-    shutil.rmtree(os.path(cwd, "Dataset", "to be deleted"))
-
-    bar()
+if os.path.exists(os.path.join(cwd, "Dataset", "to be deleted")):
+    shutil.rmtree(os.path.join(cwd, "Dataset", "to be deleted"))
