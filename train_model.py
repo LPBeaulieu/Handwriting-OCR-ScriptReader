@@ -87,7 +87,7 @@ def get_dataloaders(batch_size=64):
             ).dataloaders(path, bs=batch_size)
 
 def cnn_structure():
-    return sequential(conv(1, 8), conv(8, 16), conv(16, 32), conv(32, 64), conv(64, 128), conv(128, 256), conv(256, 512), conv(512, 1024), conv(1024, 55, activation_function = False), Flatten())
+    return sequential(conv(1, 8), conv(8, 16), conv(16, 32), conv(32, 64), conv(64, 128), conv(128, 256), conv(256, 512), conv(512, 1024), conv(1024, number_of_categories, activation_function = False), Flatten())
 
 def fit(epochs=3, learning_rate = 0.005):
     learn = Learner(get_dataloaders(), cnn_structure(), loss_func=F.cross_entropy,
