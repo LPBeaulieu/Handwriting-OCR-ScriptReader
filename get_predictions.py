@@ -136,6 +136,42 @@ gutter_margin_width_pixels = 0.75*300
 #perform character segmentation.
 top_left_dot = None
 top_right_dot = None
+#If the user has selected the "autocorrect" option, then the code
+#will screen the misspelled words in the page (words that aren't found
+#within "english_dict") to see if any of them could be corrected by
+#altering one letter, and that the resulting word could be found in
+#the "short_english_dict". If so, the substitution would be made.
+#Also, the corrected word would be in uppercase if every letter
+#of the misspelled word was in uppercase as well. If only the first
+#letter of the misspelt word was in uppercase, then the corrected
+#word would be capitalized. Otherwise, the corrected word will be
+#in lowercase.
+autocorrect = False
+#If the user has selected the "autocorrect_lower" option, then the code
+#will screen the misspelled words in the page (words that aren't found
+#within "english_dict") to see if any of them could be corrected by
+#altering one letter, and that the resulting word could be found in
+#the "short_english_dict". If so, the substitution would be made.
+#Also, the corrected word would only be in uppercase if every letter
+#of the misspelled word was in uppercase as well. Otherwise, the
+#corrected word will be in lowercase.
+autocorrect_lower = False
+#If there is at least one instance of a non-directional single "'" or
+#double '"' quote in the "text" string, or if the user has selected the
+#"smart_quotes" or "symmetrical_quotes" options, then all of the directional
+#quotes found within the page are switched to their non-directional counterparts.
+#This would be relevant if the user has trained the CNN model on directional
+#quotes, but didn't get good OCR accuracy when handling them. Alternatively,
+#if the user has trained their model on directional quotes but wants to have
+#symmetrical quotes in the final document, the directional quotes, if present,
+#still need to be changed for the symmetrical quotes. After that first step,
+#if there was at least one instance of a symmetrical quote in the document and
+#that the user didn't specify the "symmetrical_quotes" option, or if they
+#selected the "smart_quotes" option, the appropriate directional quotes will
+#be applied to the page.
+smart_quotes = False
+symmetrical_quotes = False
+
 
 if len(sys.argv) > 1:
     #The "try/except" statement will
@@ -201,6 +237,14 @@ if len(sys.argv) > 1:
                             lines_between_text = int(arguments[k])
                         elif k == 4:
                             gutter_margin_width_pixels = round(float(arguments[k])*300)
+            elif sys.argv[j] == "autocorrect":
+                autocorrect = True
+            elif sys.argv[j] == "autocorrect_lower":
+                autocorrect_lower = True
+            elif sys.argv[j] == "smart_quotes":
+                smart_quotes = True
+            elif sys.argv[j] == "symmetrical_quotes":
+                symmetrical_quotes = True
 
     except Exception as e:
         print(e)
@@ -241,6 +285,68 @@ if y_overlap == None:
 #character in each of the pages of the dataset, so that every
 #character of a given category has a different file name.
 character_index = 0
+
+
+if autocorrect == True or autocorrect_lower == True:
+    #The 27K word list ("wlist_match7.txt") was found at the following link
+    #(https://www.keithv.com/software/wlist/) and it was assembled by selecting
+    #words at the intersection of 12 different word lists, such as the
+    #British national corpus.
+
+    #The dictionary text files are retrieved using the "glob" module.
+    #If there is more than two text files within the "Dictionary" subfolder
+    #of the working folder, an error message is displayed in the Powershell.
+    #The same is true if less than two TXT files are found within the folder,
+    #as the code needs to read the original dictionary, and its abridged version,
+    #without duplicate suggestions bearing only one different letter at a given
+    #index. The shorter dictionary file name must also start with "Abridged".
+    path_txt = os.path.join(cwd, "Dictionary",  "*.txt")
+    txt_files = glob.glob(path_txt)
+    if txt_files == []:
+        print("\nPlease include a text file (.txt) containing " +
+        'the comprehensive list of words that you wish to use in the "Dictionary" subfolder ' +
+        'of the working folder, along with its abridged version, of which the file name ' +
+        'starts with "Abridged".')
+        problem = True
+    elif len(txt_files) == 1:
+        print("\nPlease include a text file (.txt) containing " +
+        'the comprehensive list of words that you wish to use in the "Dictionary" subfolder ' +
+        'of the working folder, along with its abridged version, of which the file name ' +
+        'starts with "Abridged".')
+        problem = True
+    elif (len(txt_files) == 2 and os.path.basename(txt_files[0])[:8].lower() == "abridged" or
+    os.path.basename(txt_files[1])[:8].lower() == "abridged"):
+        for file in txt_files:
+            if os.path.basename(file)[:8].lower() == "abridged":
+                abridged_dict_path = file
+            else:
+                dict_path = file
+    else:
+        print("\nPlease include a text file (.txt) containing " +
+        'the comprehensive list of words that you wish to use in the "Dictionary" subfolder ' +
+        'of the working folder, along with its abridged version, of which the file name ' +
+        'starts with "Abridged".')
+        problem = True
+
+
+    #The 27K word list ("wlist_match12.txt") was found at the following link
+    #(https://www.keithv.com/software/wlist/) and it was assembled by selecting
+    #words at the intersection of 12 different word lists, such as the
+    #British national corpus.
+    with open(dict_path, "r") as dict:
+        english_dict = dict.readlines()
+    #The dictionary "Abridged wlist_match12.txt" contains the words derived from
+    #the above dictionary and that at least four letter long, and that are unambiguous,
+    #in that they differ from one another by more than one letter/sequence of letters.
+    #Of note, as the code doesn't know where the OCR error has occured within the word,
+    #it is possible that that it will select a word that isn't the right one from the
+    #shortened word list.
+    with open(abridged_dict_path, "r") as short_dict:
+        short_english_dict = short_dict.readlines()
+
+    with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+        e.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
+
 
 with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
     f.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
@@ -791,25 +897,10 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
             #If the label is "period", it is replaced with ".".
             elif text[j] == "period":
                 text[j] = "."
-
-        for j in range(len(text)):
-            #If the label is "double quote" or "'", it is replaced  with the corresponding
-            #directional quote mark. If the "double quote" character is the last character
-            #in the page or if there is a space after "double quote", it will be replaced
-            #with a closing double quote. Otherwise, it will be replaced with an opening double quote.
-            #Conversely, if the single quote is the first character in the page, or if
-            #it is preceded by a space, it will be replaced with an opening single quote.
-            #Otherwise, it will be replaced with a closing single quote.
-            if text[j] == "double quote":
-                if j == len(text)-1 or text[j+1] == " ":
-                    text[j] = "\\'94"
-                else:
-                    text[j] = "\\'93"
-            elif text[j] == "'" and text[j-1] != "\\":
-                if j == 0 or text[j-1] == " ":
-                    text[j] = "\\'91"
-                else:
-                    text[j] = "\\'92"
+            #If the label is "double quote", it is replaced with a symmetrical double
+            #quote ('"'), which will later be converted to the directional quotes.
+            elif text[j] == "double quote":
+                text[j] = '"'
 
         #The following "for" loop removes spaces before and after hyphens, to
         #ensure that hyphenated words do not include spaces.
@@ -846,6 +937,101 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         # .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace(" ?", "?")
         # .replace(" !", "!").replace("( ", "(").replace(" )", ")"))
 
+        #If there is at least one instance of a non-directional single "'" or
+        #double '"' quote in the "text" string, or if the user has selected the
+        #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
+        #quotes found within the page are switched to their non-directional counterparts.
+        #This would be relevant if the user has trained the CNN model on directional
+        #quotes, but didn't get good OCR accuracy when handling them. Alternatively,
+        #if the user has trained their model on directional quotes but wants to have
+        #symmetrical quotes in the final document, the directional quotes, if present,
+        #still need to be changed for the symmetrical quotes. After that first step,
+        #if there was at least one instance of a symmetrical quote in the document and
+        #that the user didn't specify the "symmetrical_quotes" option, or if they
+        #selected the "smart_quotes" option, the appropriate directional quotes will
+        #be applied to the page.
+        if (smart_quotes == True or symmetrical_quotes == True or
+        (text.find("'") != -1 or text.find('"') != -1)):
+            text = (text.replace("‘", "'").replace("’", "'")
+            .replace('“', '"').replace('”', '"'))
+            #The symmetrical quotes will be changed to their directional counterparts,
+            #if the user hasn't passed in the "symmetrical_quotes" argument, in which
+            #case the final document will have the symmetrical quotes.
+            if symmetrical_quotes == False:
+                #The nested quotes and single or double quotes followed by a space (and thus mapping
+                #to closing directional quotes) are changed to their RTF escape equivalents.
+                quote_substitutions = [['"' + "'", r"\'93" + r"\'91"], ["'" + '"', r"\'92" + r"\'94"],
+                ["' ", r"\'92" + ' '], ['" ', r"\'94" + ' ']]
+                for quote in quote_substitutions:
+                    text = re.sub(quote[0], quote[1], text)
+
+                #If the first character of the "text" string
+                #is a quote, it is then changed for the corresponding
+                #opening directional quote.
+                if text[0] == "'":
+                    text = r"\'91" + text[1:]
+                elif text[0] == '"':
+                    text = r"\'93" + text[1:]
+
+                #If the last character of the "text" string
+                #is a quote, it is then changed for the corresponding
+                #closing directional quote.
+                if text[-1] == "'":
+                    text = text[:-1] + r"\'92"
+                elif text[-1] == '"':
+                    text = text[:-1] + r"\'94"
+
+                #The indices of any remaining symmetrical double quotes ('"') are stored in
+                #the list "double_quote_indices" and cycled through using a "for" loop.
+                #If the index is above zero and smaller than the last index of the "double_quote_indices"
+                #list, and if the preceding character is not a space, "(", "[", "{", "-", "_" then the
+                #closing directional quote is substituted for the symmetrical one. The "text"
+                #string is updated by slicing it while skipping over what was the symmetrical double
+                #quote ('"') at index "double_quote_indices[i]" in "text". The "for" loop proceeds
+                #in reverse order to avoid indexing issues when substituting quotes for multi-character RTF escapes.
+                double_quote_matches = re.finditer('"', text)
+                double_quote_indices = [match.start() for match in double_quote_matches]
+                for i in range(len(double_quote_indices)-1, -1, -1):
+                    if (double_quote_indices[i] > 0 and double_quote_indices[i] < len(text)-1 and
+                    text[double_quote_indices[i]-1] not in [" ", "(", "[", "{", "-", "_"]):
+                        text = (text[:double_quote_indices[i]] + r"\'94" +
+                        text[double_quote_indices[i]+1:])
+
+                    #If the index is above zero and smaller than the last index of the "double_quote_indices"
+                    #list, and if the previous character is not a letter and the following character is either
+                    #a letter or "¡", "¿" (which would start an exclamation or question, respectively, in Spanish)
+                    #a backslash (if the quote is followed by an RTF command or escape such as "\i"),
+                    #or a smallcaps (the italics will be dealt with after this step), then the double quote
+                    #is changed to the opening directional quote.
+                    elif (double_quote_indices[i] > 0 and double_quote_indices[i] < len(text)-1 and
+                    (text[double_quote_indices[i]-1].isalpha() == False and
+                    (text[double_quote_indices[i]+1].isalpha() or
+                    text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                        text = (text[:double_quote_indices[i]] + r"\'93" +
+                        text[double_quote_indices[i]+1:])
+
+                single_quote_matches = re.finditer("'", text)
+                single_quote_indices = [match.start() for match in single_quote_matches]
+                for i in range(len(single_quote_indices)-1, -1, -1):
+                    #The "if" statement will also change the symmetrical single quote to the closing
+                    #directional single quote in contractions such as "don't", as only the preceding character
+                    #is considered. In this case, the preceding character must not be a space, "(", "[", "{",
+                    #"-", "_" nor a backslash (so that the single quote in the RTF escapes (such as r"\'92"))
+                    #are not confused for actual single quotes.
+                    if (single_quote_indices[i] > 0  and single_quote_indices[i] < len(text)-1 and
+                    text[single_quote_indices[i]-1] != "\\" and text[single_quote_indices[i]-1] not in
+                    [" ", "(", "[", "{", "-", "_",  "\\"]):
+                        text = (text[:single_quote_indices[i]] + r"\'92" +
+                        text[single_quote_indices[i]+1:])
+
+                    elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(text)-1 and
+                    (text[single_quote_indices[i]-1] != "\\" and
+                    text[single_quote_indices[i]-1].isalpha() == False and
+                    (text[single_quote_indices[i]+1].isalpha() or
+                    text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                        text = (text[:single_quote_indices[i]] + r"\'91" +
+                        text[single_quote_indices[i]+1:])
+
 
         #The RTF escapes are substituted for the symbols to allow for adequate representation within
         #the RTF file.
@@ -877,8 +1063,84 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         for escape in rtf_escapes:
             text = re.sub(escape[0], escape[1], text)
 
-        text = re.sub('[" "]+', " ", text).replace(" \\'94", "\\'94").replace(" \\'92", "\\'92")
+        #Successive spaces in excess of one are changed for a single space, and the
+        #extraneous spaces before closing double or single quotes are removed. Also,
+        #two successive hyphens are changed for an "em" dash.
+        text = (re.sub('[" "]+', " ", text).replace(" \\'94", "\\'94")
+        .replace(" \\'92", "\\'92").replace("--", r"\'97"))
 
+        #If the user has selected the "autocorrect_lower" option, then the code
+        #will screen the misspelled words in the page (words that aren't found
+        #within "english_dict") to see if any of them could be corrected by
+        #altering one letter, and that the resulting word could be found in
+        #the "short_english_dict". If so, the substitution would be made.
+        #Also, the corrected word would only be in uppercase if every letter
+        #of the misspelled word was in uppercase as well. Otherwise, the
+        #corrected word will be in lowercase.
+        if autocorrect_lower == True:
+            with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+                word_list = re.split(r'(\W+)', text)
+                for j in range(len(word_list)):
+                    if (word_list[j].isalpha() and word_list[j][0].islower() and
+                    len(word_list[j]) > 4 and word_list[j] not in english_dict):
+                        len_misspelled_word = len(word_list[j])
+                        start_misspelled_word = word_list[j][:3]
+                        end_misspelled_word = word_list[j][-3:]
+                        matching_words = [w.strip() for w in short_english_dict if
+                        len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
+                        w.strip()[-3:] == end_misspelled_word)]
+                        for k in range(len(matching_words)):
+                            matching_letters_counter = 0
+                            for l in range(len(matching_words[k])):
+                                if matching_words[k][l] == word_list[j][l]:
+                                    matching_letters_counter += 1
+                            if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
+                                word_list[j] = matching_words[k].upper()
+                                break
+                            elif matching_letters_counter == len_misspelled_word-1:
+                                word_list[j] = matching_words[k]
+                                break
+                corrected_text = "".join(word_list)
+                e.write(corrected_text)
+
+        #If the user has selected the "autocorrect" option, then the code
+        #will screen the misspelled words in the page (words that aren't found
+        #within "english_dict") to see if any of them could be corrected by
+        #altering one letter, and that the resulting word could be found in
+        #the "short_english_dict". If so, the substitution would be made.
+        #Also, the corrected word would be in uppercase if every letter
+        #of the misspelled word was in uppercase as well. If only the first
+        #letter of the misspelt word was in uppercase, then the corrected
+        #word would be capitalized. Otherwise, the corrected word will be
+        #in lowercase.
+        elif autocorrect == True:
+            with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+                word_list = re.split(r'(\W+)', text)
+                for j in range(len(word_list)):
+                    if (word_list[j].isalpha() and len(word_list[j]) > 4 and
+                    word_list[j] not in english_dict):
+                        len_misspelled_word = len(word_list[j])
+                        start_misspelled_word = word_list[j][:3]
+                        end_misspelled_word = word_list[j][-3:]
+                        matching_words = [w.strip() for w in short_english_dict if
+                        len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
+                        w.strip()[-3:] == end_misspelled_word)]
+                        for k in range(len(matching_words)):
+                            matching_letters_counter = 0
+                            for l in range(len(matching_words[k])):
+                                if matching_words[k][l] == word_list[j][l]:
+                                    matching_letters_counter += 1
+                            if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
+                                word_list[j] = matching_words[k].upper()
+                                break
+                            elif matching_letters_counter == len_misspelled_word-1 and word_list[j][0].isupper():
+                                word_list[j] = matching_words[k].capitalize()
+                                break
+                            elif matching_letters_counter == len_misspelled_word-1:
+                                word_list[j] = matching_words[k]
+                                break
+                corrected_text = "".join(word_list)
+                e.write(corrected_text)
 
         f.write(text)
 
@@ -886,4 +1148,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
     #contents of the "text" string. The closing curly bracket (}) is now added at the very end
     #of the ".rtf" document, as the "for JPEG_file_name in JPEG_file_names" loop is complete. The "}"
     #matches the first "{" of the prolog.
+    if autocorrect == True or autocorrect_lower == True:
+        with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+            e.write("}")
     f.write("}")
