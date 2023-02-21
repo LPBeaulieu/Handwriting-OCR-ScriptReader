@@ -81,9 +81,9 @@ py -m pip install glob2
 py -m pip install textblob
 ```
 
-<b>Step 7</b>- Create the folder "OCR Raw Data" in your working folder:
+<b>Step 7</b>- Create the folder "Training&Validation Data" and "OCR Raw Data" in your working folder:
 ```
-mkdir "OCR Raw Data" 
+mkdir "OCR Raw Data" "Training&Validation Data" 
 ```
 <b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
