@@ -1047,7 +1047,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
             for j in range(len(word_list)):
                 if word_list[j].isalpha() and word_list[j] != "qc":
                     word_suggestion = Word(word_list[j]).spellcheck()[0]
-                    if word_suggestion[1] > autocorrect_confidence:
+                    if word_suggestion[1] >= autocorrect_confidence:
                         if word_list[j].isupper():
                             word_list[j] = word_suggestion[0].upper()
                         elif word_list[j][0].isupper():
