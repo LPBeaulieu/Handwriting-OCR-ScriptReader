@@ -76,11 +76,16 @@ py -m pip install alive-progress
 py -m pip install glob2
 ```
 
-<b>Step 6</b>- Create the folder "OCR Raw Data" in your working folder:
+<b>Step 6</b>- Install <b>TextBlob</b> (Python module used for the autocorrect feature):
+```
+py -m pip install textblob
+```
+
+<b>Step 7</b>- Create the folder "OCR Raw Data" in your working folder:
 ```
 mkdir "OCR Raw Data" 
 ```
-<b>Step 7</b>- You're now ready to use <b>ScriptReader</b>! 🎉
+<b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
 ## 🎈 Usage <a name="usage"></a>
 First off, you will need to print some <b>ScriptReader</b> notebook pages, which are special in that they are dot grid pages with line spacing in-between
