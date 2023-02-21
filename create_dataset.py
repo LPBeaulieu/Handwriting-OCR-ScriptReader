@@ -660,7 +660,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #files exclusively in WordPad or Text Editor and not a full-fledged word processor, which would insert
         #formatting information that would skew the character count.
         labels = []
-        with open(os.path.join('Training&Validation Data', JPEG_file_names[i][:-4] + '.txt'), 'r') as f:
+        with open(os.path.join('Training&Validation Data', JPEG_file_names[i][:-4] + '.txt'), 'r', encoding="utf-8") as f:
             text = f.read()
             character_count = 0
             for char in text:
@@ -679,25 +679,115 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 elif text[character_count] == u"\u0411":
                     labels.append("empty")
                     character_count+=1
-                #If the character in the txt file is a "/" (Python source code u"\u002F"), "forward-slash"
-                #is appended to the list "labels".
-                elif text[character_count] == u"\u002F":
+                #If the character in the txt file is a "/" (Python source code in [u"\u002F", u"\u2215", u"\u2044"]),
+                #"forward slash" is appended to the list "labels".
+                elif text[character_count] in [u"\u002F", u"\u2215", u"\u2044"]:
                     labels.append("forward slash")
                     character_count+=1
-                #If the character in the txt file is a "?" (Python source code u"\u003F"), "?"
+                #If the character in the txt file is a "\" (Python source code in [u"\u005C", u"\uFF3C"]),
+                #"backslash" is appended to the list "labels".
+                elif text[character_count] in [u"\u005C", u"\uFF3C"]:
+                    labels.append("backslash")
+                    character_count+=1
+                #If the character in the txt file is a "|" (Python source code u"\u007C"),
+                #"pipe" is appended to the list "labels".
+                elif text[character_count] == u"\u007C":
+                    labels.append("pipe")
+                    character_count+=1
+                #If the character in the txt file is a "$" (Python source code in [u"\u0024", u"\uFF04", u"\uFE69"]),
+                #"dollar sign" is appended to the list "labels".
+                elif text[character_count] in [u"\u0024", u"\uFF04", u"\uFE69"]:
+                    labels.append("dollar sign")
+                    character_count+=1
+                #If the character in the txt file is a "+" (Python source code in [u"\uFF0B", u"\u002B"]),
+                #"plus sign" is appended to the list "labels".
+                elif text[character_count] in [u"\uFF0B", u"\u002B"]:
+                    labels.append("plus sign")
+                    character_count+=1
+                #If the character in the txt file is a "=" (Python source codein [u"\u003D", u"\uFF1D"]),
+                #"equals sign" is appended to the list "labels".
+                elif text[character_count] in [u"\u003D", u"\uFF1D"]:
+                    labels.append("equals sign")
+                    character_count+=1
+                #If the character in the txt file is a "?" (Python source code in [u"\u003F", u"\uFF1F"]),
+                #"question mark" is appended to the list "labels".
+                elif text[character_count] in [u"\u003F", u"\uFF1F"]:
+                    labels.append("question mark")
+                    character_count+=1
+                #If the character in the txt file is a "!" (Python source code u"\u0021"), "exclamation mark"
                 #is appended to the list "labels".
-                elif text[character_count] == u"\u003F":
-                    labels.append(u"\u003F")
+                elif text[character_count] == u"\u0021":
+                    labels.append("exclamation mark")
                     character_count+=1
                 #If the character in the txt file is a ".", "period"
                 #is appended to the list "labels".
                 elif text[character_count] == '.':
                     labels.append("period")
                     character_count+=1
+                #If the character in the txt file is a ":" (Python source code u"\u003A"), "colon"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u003A":
+                    labels.append("colon")
+                    character_count+=1
+                #If the character in the txt file is a "@" (Python source code u"\u0040"), "at sign"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u0040":
+                    labels.append("at sign")
+                    character_count+=1
+                #If the character in the txt file is a "`" (Python source code in [u"\u0060", u"\u0300", u"\uFF40"]),
+                #"grave accent" is appended to the list "labels".
+                elif text[character_count] in [u"\u0060", u"\u0300", u"\uFF40"]:
+                    labels.append("grave accent")
+                    character_count+=1
+                #If the character in the txt file is a "'" (Python source code u"\u0027"), "single quote"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u0027":
+                    labels.append("single quote")
+                    character_count+=1
                 #If the character in the txt file is a '"' (Python source code u"\u0022"), "double quote"
                 #is appended to the list "labels".
                 elif text[character_count] == u"\u0022":
                     labels.append("double quote")
+                    character_count+=1
+                #If the character in the txt file is a '#' (Python source code in [u"\u0023", u"\uFF03"]), "hashtag"
+                #is appended to the list "labels".
+                elif text[character_count] in [u"\u0023", u"\uFF03"]:
+                    labels.append("hashtag")
+                    character_count+=1
+                #If the character in the txt file is a '<' (Python source code in [u"\u003C", u"\uFF1C"]),
+                #"lesser-than sign" is appended to the list "labels".
+                elif text[character_count] in [u"\u003C", u"\uFF1C"]:
+                    labels.append("lesser-than sign")
+                    character_count+=1
+                #If the character in the txt file is a '>' (Python source code in [u"\u003E", u"\uFF1E", u"\uFE65"]),
+                #"greater-than sign" is appended to the list "labels".
+                elif text[character_count] in [u"\u003E", u"\uFF1E", u"\uFE65"]:
+                    labels.append("greater-than sign")
+                    character_count+=1
+                #If the character in the txt file is a '*' (Python source code in [u"\u002A", u"\u2217"]), "asterisk"
+                #is appended to the list "labels".
+                elif text[character_count] in [u"\u002A", u"\u2217"]:
+                    labels.append("asterisk")
+                    character_count+=1
+                #If the character in the txt file is a '%' (Python source code in [u"\u0025", u"\uFE6A", u"\uFF05"]),
+                #"percent" is appended to the list "labels".
+                elif text[character_count] in [u"\u0025", u"\uFE6A", u"\uFF05"]:
+                    labels.append("percent")
+                    character_count+=1
+                #If the character in the txt file is a '&' (Python source code in [u"\uFF06", u"\u0026", u"\uFE60"]),
+                #"ampersand" is appended to the list "labels".
+                elif text[character_count] in [u"\uFF06", u"\u0026", u"\uFE60"]:
+                    labels.append("ampersand")
+                    character_count+=1
+                #If the character in the txt file is a '{' (Python source code u"\u007B"), "left curly bracket"
+                #is appended to the list "labels".
+                elif text[character_count] == u"\u007B":
+                    labels.append("left curly bracket")
+                    character_count+=1
+                #If the character in the txt file is a '}' (Python source code in [u"\u007D", u"\uFF5D"]),
+                #"right curly bracket" is appended to the list "labels".
+                elif text[character_count] in [u"\u007D", u"\uFF5D"]:
+                    labels.append("right curly bracket")
                     character_count+=1
                 #If the character in the txt file is a "Д" (Cyrillic Capital Letter De,
                 #Python source code u"\u0414"), "to be deleted" is appended to the list "labels".
@@ -723,8 +813,10 @@ with alive_bar(len(JPEG_file_names)) as bar:
 
         #As an added quality control step, the length of the list of character coordinates and their labels
         #are printed on screen. The two lengths should be equivalent, as they both refer to the same characters.
+        print("Currently working on file: " + os.path.basename(JPEG_file_names[i]))
         print("Length of list 'chars_x_y_coordinates': " + str(page_character_index))
         print("Length of list 'labels': " + str(len(labels)))
+        print("")
 
         page_character_index = 0
         #Generating the individual character images based on their x and y coordinates (from chars_x_y_coordinates),
