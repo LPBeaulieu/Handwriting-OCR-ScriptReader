@@ -12,6 +12,7 @@ import re
 import numpy as np
 import sys
 import math
+from textblob import Word
 
 
 cwd = os.getcwd()
@@ -136,7 +137,7 @@ gutter_margin_width_pixels = 0.75*300
 #perform character segmentation.
 top_left_dot = None
 top_right_dot = None
-#If the user has selected the "autocorrect" option, then the code
+#If the user has selected the "basic_autocorrect" option, then the code
 #will screen the misspelled words in the page (words that aren't found
 #within "english_dict") to see if any of them could be corrected by
 #altering one letter, and that the resulting word could be found in
@@ -146,8 +147,8 @@ top_right_dot = None
 #letter of the misspelt word was in uppercase, then the corrected
 #word would be capitalized. Otherwise, the corrected word will be
 #in lowercase.
-autocorrect = False
-#If the user has selected the "autocorrect_lower" option, then the code
+basic_autocorrect = False
+#If the user has selected the "basic_autocorrect_lower" option, then the code
 #will screen the misspelled words in the page (words that aren't found
 #within "english_dict") to see if any of them could be corrected by
 #altering one letter, and that the resulting word could be found in
@@ -155,7 +156,19 @@ autocorrect = False
 #Also, the corrected word would only be in uppercase if every letter
 #of the misspelled word was in uppercase as well. Otherwise, the
 #corrected word will be in lowercase.
-autocorrect_lower = False
+basic_autocorrect_lower = False
+#If the user has selected the "autocorrect" option, then the code
+#will screen all of the words against the TextBlob "spellcheck()" method,
+#and substitutions will only be done if the confidence is above 90% that
+#the suggestion is the correct one. Also, the corrected word would be
+#in uppercase if every letter of the misspelled word was in uppercase
+#as well. If only the first letter of the misspelt word was in uppercase,
+#then the corrected word would be capitalized. Otherwise, the corrected
+#word will be in lowercase. The user may specify a different autocorrect
+#confidence threshold for the correction of mistakes by entering the decimal
+#probability after the "autocorrect:" argument.
+autocorrect = False
+autocorrect_confidence = 0.90
 #If there is at least one instance of a non-directional single "'" or
 #double '"' quote in the "text" string, or if the user has selected the
 #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
@@ -237,10 +250,17 @@ if len(sys.argv) > 1:
                             lines_between_text = int(arguments[k])
                         elif k == 4:
                             gutter_margin_width_pixels = round(float(arguments[k])*300)
-            elif sys.argv[j] == "autocorrect":
+            elif sys.argv[j].lower()[:23] == "basic_autocorrect_lower":
+                basic_autocorrect_lower = True
+            elif sys.argv[j].lower()[:17] == "basic_autocorrect":
+                basic_autocorrect = True
+            elif sys.argv[j].lower()[:11] == "autocorrect":
                 autocorrect = True
-            elif sys.argv[j] == "autocorrect_lower":
-                autocorrect_lower = True
+                try:
+                    autocorrect_confidence = float(sys.argv[j][12:].strip())
+                    print("autocorrect_confidence: ", autocorrect_confidence)
+                except:
+                    pass
             elif sys.argv[j] == "smart_quotes":
                 smart_quotes = True
             elif sys.argv[j] == "symmetrical_quotes":
@@ -287,7 +307,7 @@ if y_overlap == None:
 character_index = 0
 
 
-if autocorrect == True or autocorrect_lower == True:
+if basic_autocorrect == True or basic_autocorrect_lower == True:
     #The 27K word list ("wlist_match7.txt") was found at the following link
     #(https://www.keithv.com/software/wlist/) and it was assembled by selecting
     #words at the intersection of 12 different word lists, such as the
@@ -344,6 +364,7 @@ if autocorrect == True or autocorrect_lower == True:
     with open(abridged_dict_path, "r") as short_dict:
         short_english_dict = short_dict.readlines()
 
+if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
     with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
         e.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
 
@@ -937,6 +958,105 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         # .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace(" ?", "?")
         # .replace(" !", "!").replace("( ", "(").replace(" )", ")"))
 
+
+        #If the user has selected the "basic_autocorrect_lower" option, then the code
+        #will screen the misspelled words in the page (words that aren't found
+        #within "english_dict") to see if any of them could be corrected by
+        #altering one letter, and that the resulting word could be found in
+        #the "short_english_dict". If so, the substitution would be made.
+        #Also, the corrected word would only be in uppercase if every letter
+        #of the misspelled word was in uppercase as well. Otherwise, the
+        #corrected word will be in lowercase. The autocorrection steps
+        #need to be performed before substitution of quotes and double quotes
+        #to their RTF escape counterparts, as the "TextBlob" spellchecker
+        #might recognize them and apply corrections, but this would likely
+        #not be the case with the RTF escapes in their stead.
+        if basic_autocorrect_lower == True:
+            word_list = re.split(r'(\W+)', text)
+            for j in range(len(word_list)):
+                if (word_list[j].isalpha() and word_list[j][0].islower() and
+                len(word_list[j]) > 4 and word_list[j] not in english_dict):
+                    len_misspelled_word = len(word_list[j])
+                    start_misspelled_word = word_list[j][:3]
+                    end_misspelled_word = word_list[j][-3:]
+                    matching_words = [w.strip() for w in short_english_dict if
+                    len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
+                    w.strip()[-3:] == end_misspelled_word)]
+                    for k in range(len(matching_words)):
+                        matching_letters_counter = 0
+                        for l in range(len(matching_words[k])):
+                            if matching_words[k][l] == word_list[j][l]:
+                                matching_letters_counter += 1
+                        if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
+                            word_list[j] = matching_words[k].upper()
+                            break
+                        elif matching_letters_counter == len_misspelled_word-1:
+                            word_list[j] = matching_words[k]
+                            break
+            corrected_text = "".join(word_list)
+
+
+        #If the user has selected the "basic_autocorrect" option, then the code
+        #will screen the misspelled words in the page (words that aren't found
+        #within "english_dict") to see if any of them could be corrected by
+        #altering one letter, and that the resulting word could be found in
+        #the "short_english_dict". If so, the substitution would be made.
+        #Also, the corrected word would be in uppercase if every letter
+        #of the misspelled word was in uppercase as well. If only the first
+        #letter of the misspelt word was in uppercase, then the corrected
+        #word would be capitalized. Otherwise, the corrected word will be
+        #in lowercase.
+        elif basic_autocorrect == True:
+            word_list = re.split(r'(\W+)', text)
+            for j in range(len(word_list)):
+                if (word_list[j].isalpha() and len(word_list[j]) > 4 and
+                word_list[j] not in english_dict):
+                    len_misspelled_word = len(word_list[j])
+                    start_misspelled_word = word_list[j][:3]
+                    end_misspelled_word = word_list[j][-3:]
+                    matching_words = [w.strip() for w in short_english_dict if
+                    len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
+                    w.strip()[-3:] == end_misspelled_word)]
+                    for k in range(len(matching_words)):
+                        matching_letters_counter = 0
+                        for l in range(len(matching_words[k])):
+                            if matching_words[k][l] == word_list[j][l]:
+                                matching_letters_counter += 1
+                        if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
+                            word_list[j] = matching_words[k].upper()
+                            break
+                        elif matching_letters_counter == len_misspelled_word-1 and word_list[j][0].isupper():
+                            word_list[j] = matching_words[k].capitalize()
+                            break
+                        elif matching_letters_counter == len_misspelled_word-1:
+                            word_list[j] = matching_words[k]
+                            break
+            corrected_text = "".join(word_list)
+
+
+        #If the user has selected the "autocorrect" option, then the code
+        #will screen all of the words against the TextBlob "spellcheck()" method,
+        #and substitutions will only be done if the confidence is above 90% that
+        #the suggestion is the correct one. Also, the corrected word would be
+        #in uppercase if every letter of the misspelled word was in uppercase
+        #as well. If only the first letter of the misspelt word was in uppercase,
+        #then the corrected word would be capitalized. Otherwise, the corrected
+        #word will be in lowercase.
+        elif autocorrect == True:
+            word_list = re.split(r'(\W+)', text)
+            for j in range(len(word_list)):
+                if word_list[j].isalpha() and word_list[j] != "qc":
+                    word_suggestion = Word(word_list[j]).spellcheck()[0]
+                    if word_suggestion[1] > autocorrect_confidence:
+                        if word_list[j].isupper():
+                            word_list[j] = word_suggestion[0].upper()
+                        elif word_list[j][0].isupper():
+                            word_list[j] = word_suggestion[0].capitalize()
+                        else:
+                            word_list[j] = word_suggestion[0]
+            corrected_text = "".join(word_list)
+
+
         #If there is at least one instance of a non-directional single "'" or
         #double '"' quote in the "text" string, or if the user has selected the
         #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
@@ -954,6 +1074,10 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         (text.find("'") != -1 or text.find('"') != -1)):
             text = (text.replace("‘", "'").replace("’", "'")
             .replace('“', '"').replace('”', '"'))
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = (corrected_text.replace("‘", "'").replace("’", "'")
+                .replace('“', '"').replace('”', '"'))
+
             #The symmetrical quotes will be changed to their directional counterparts,
             #if the user hasn't passed in the "symmetrical_quotes" argument, in which
             #case the final document will have the symmetrical quotes.
@@ -964,6 +1088,8 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                 ["' ", r"\'92" + ' '], ['" ', r"\'94" + ' ']]
                 for quote in quote_substitutions:
                     text = re.sub(quote[0], quote[1], text)
+                    if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                        corrected_text = re.sub(quote[0], quote[1], corrected_text)
 
                 #If the first character of the "text" string
                 #is a quote, it is then changed for the corresponding
@@ -972,6 +1098,12 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                     text = r"\'91" + text[1:]
                 elif text[0] == '"':
                     text = r"\'93" + text[1:]
+                if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                    if corrected_text[0] == "'":
+                        corrected_text = r"\'91" + corrected_text[1:]
+                    elif corrected_text[0] == '"':
+                        corrected_text = r"\'93" + corrected_text[1:]
+
 
                 #If the last character of the "text" string
                 #is a quote, it is then changed for the corresponding
@@ -980,6 +1112,11 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                     text = text[:-1] + r"\'92"
                 elif text[-1] == '"':
                     text = text[:-1] + r"\'94"
+                if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                    if corrected_text[-1] == "'":
+                        corrected_text = corrected_text[:-1] + r"\'92"
+                    elif corrected_text[-1] == '"':
+                        corrected_text = corrected_text[:-1] + r"\'94"
 
                 #The indices of any remaining symmetrical double quotes ('"') are stored in
                 #the list "double_quote_indices" and cycled through using a "for" loop.
@@ -997,6 +1134,7 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                         text = (text[:double_quote_indices[i]] + r"\'94" +
                         text[double_quote_indices[i]+1:])
 
+
                     #If the index is above zero and smaller than the last index of the "double_quote_indices"
                     #list, and if the previous character is not a letter and the following character is either
                     #a letter or "¡", "¿" (which would start an exclamation or question, respectively, in Spanish)
@@ -1009,6 +1147,23 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                     text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
                         text = (text[:double_quote_indices[i]] + r"\'93" +
                         text[double_quote_indices[i]+1:])
+
+
+                if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                    double_quote_matches = re.finditer('"', corrected_text)
+                    double_quote_indices = [match.start() for match in double_quote_matches]
+                    for i in range(len(double_quote_indices)-1, -1, -1):
+                        if (double_quote_indices[i] > 0 and double_quote_indices[i] < len(corrected_text)-1 and
+                        corrected_text[double_quote_indices[i]-1] not in [" ", "(", "[", "{", "-", "_"]):
+                            corrected_text = (corrected_text[:double_quote_indices[i]] + r"\'94" +
+                            corrected_text[double_quote_indices[i]+1:])
+                        elif (double_quote_indices[i] > 0 and double_quote_indices[i] < len(corrected_text)-1 and
+                        (corrected_text[double_quote_indices[i]-1].isalpha() == False and
+                        (corrected_text[double_quote_indices[i]+1].isalpha() or
+                        corrected_text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                            corrected_text = (corrected_text[:double_quote_indices[i]] + r"\'93" +
+                            corrected_text[double_quote_indices[i]+1:])
+
 
                 single_quote_matches = re.finditer("'", text)
                 single_quote_indices = [match.start() for match in single_quote_matches]
@@ -1023,7 +1178,6 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                     [" ", "(", "[", "{", "-", "_",  "\\"]):
                         text = (text[:single_quote_indices[i]] + r"\'92" +
                         text[single_quote_indices[i]+1:])
-
                     elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(text)-1 and
                     (text[single_quote_indices[i]-1] != "\\" and
                     text[single_quote_indices[i]-1].isalpha() == False and
@@ -1031,6 +1185,23 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
                     text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
                         text = (text[:single_quote_indices[i]] + r"\'91" +
                         text[single_quote_indices[i]+1:])
+
+                if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                    single_quote_matches = re.finditer("'", corrected_text)
+                    single_quote_indices = [match.start() for match in single_quote_matches]
+                    for i in range(len(single_quote_indices)-1, -1, -1):
+                        if (single_quote_indices[i] > 0  and single_quote_indices[i] < len(corrected_text)-1 and
+                        corrected_text[single_quote_indices[i]-1] != "\\" and corrected_text[single_quote_indices[i]-1] not in
+                        [" ", "(", "[", "{", "-", "_",  "\\"]):
+                            corrected_text = (corrected_text[:single_quote_indices[i]] + r"\'92" +
+                            corrected_text[single_quote_indices[i]+1:])
+                        elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(corrected_text)-1 and
+                        (corrected_text[single_quote_indices[i]-1] != "\\" and
+                        corrected_text[single_quote_indices[i]-1].isalpha() == False and
+                        (corrected_text[single_quote_indices[i]+1].isalpha() or
+                        corrected_text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                            corrected_text = (corrected_text[:single_quote_indices[i]] + r"\'91" +
+                            corrected_text[single_quote_indices[i]+1:])
 
 
         #The RTF escapes are substituted for the symbols to allow for adequate representation within
@@ -1062,93 +1233,26 @@ with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
         ['–', r"\'96"]]
         for escape in rtf_escapes:
             text = re.sub(escape[0], escape[1], text)
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = re.sub(escape[0], escape[1], corrected_text)
 
         #Successive spaces in excess of one are changed for a single space, and the
         #extraneous spaces before closing double or single quotes are removed. Also,
         #two successive hyphens are changed for an "em" dash.
         text = (re.sub('[" "]+', " ", text).replace(" \\'94", "\\'94")
         .replace(" \\'92", "\\'92").replace("--", r"\'97"))
-
-        #If the user has selected the "autocorrect_lower" option, then the code
-        #will screen the misspelled words in the page (words that aren't found
-        #within "english_dict") to see if any of them could be corrected by
-        #altering one letter, and that the resulting word could be found in
-        #the "short_english_dict". If so, the substitution would be made.
-        #Also, the corrected word would only be in uppercase if every letter
-        #of the misspelled word was in uppercase as well. Otherwise, the
-        #corrected word will be in lowercase.
-        if autocorrect_lower == True:
+        if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+            corrected_text = (re.sub('[" "]+', " ", corrected_text).replace(" \\'94", "\\'94")
+            .replace(" \\'92", "\\'92").replace("--", r"\'97"))
             with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
-                word_list = re.split(r'(\W+)', text)
-                for j in range(len(word_list)):
-                    if (word_list[j].isalpha() and word_list[j][0].islower() and
-                    len(word_list[j]) > 4 and word_list[j] not in english_dict):
-                        len_misspelled_word = len(word_list[j])
-                        start_misspelled_word = word_list[j][:3]
-                        end_misspelled_word = word_list[j][-3:]
-                        matching_words = [w.strip() for w in short_english_dict if
-                        len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
-                        w.strip()[-3:] == end_misspelled_word)]
-                        for k in range(len(matching_words)):
-                            matching_letters_counter = 0
-                            for l in range(len(matching_words[k])):
-                                if matching_words[k][l] == word_list[j][l]:
-                                    matching_letters_counter += 1
-                            if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
-                                word_list[j] = matching_words[k].upper()
-                                break
-                            elif matching_letters_counter == len_misspelled_word-1:
-                                word_list[j] = matching_words[k]
-                                break
-                corrected_text = "".join(word_list)
                 e.write(corrected_text)
-
-        #If the user has selected the "autocorrect" option, then the code
-        #will screen the misspelled words in the page (words that aren't found
-        #within "english_dict") to see if any of them could be corrected by
-        #altering one letter, and that the resulting word could be found in
-        #the "short_english_dict". If so, the substitution would be made.
-        #Also, the corrected word would be in uppercase if every letter
-        #of the misspelled word was in uppercase as well. If only the first
-        #letter of the misspelt word was in uppercase, then the corrected
-        #word would be capitalized. Otherwise, the corrected word will be
-        #in lowercase.
-        elif autocorrect == True:
-            with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
-                word_list = re.split(r'(\W+)', text)
-                for j in range(len(word_list)):
-                    if (word_list[j].isalpha() and len(word_list[j]) > 4 and
-                    word_list[j] not in english_dict):
-                        len_misspelled_word = len(word_list[j])
-                        start_misspelled_word = word_list[j][:3]
-                        end_misspelled_word = word_list[j][-3:]
-                        matching_words = [w.strip() for w in short_english_dict if
-                        len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
-                        w.strip()[-3:] == end_misspelled_word)]
-                        for k in range(len(matching_words)):
-                            matching_letters_counter = 0
-                            for l in range(len(matching_words[k])):
-                                if matching_words[k][l] == word_list[j][l]:
-                                    matching_letters_counter += 1
-                            if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
-                                word_list[j] = matching_words[k].upper()
-                                break
-                            elif matching_letters_counter == len_misspelled_word-1 and word_list[j][0].isupper():
-                                word_list[j] = matching_words[k].capitalize()
-                                break
-                            elif matching_letters_counter == len_misspelled_word-1:
-                                word_list[j] = matching_words[k]
-                                break
-                corrected_text = "".join(word_list)
-                e.write(corrected_text)
-
         f.write(text)
 
     #An ".rtf" file was created and a basic document prolog was added earlier, followed by the
     #contents of the "text" string. The closing curly bracket (}) is now added at the very end
     #of the ".rtf" document, as the "for JPEG_file_name in JPEG_file_names" loop is complete. The "}"
     #matches the first "{" of the prolog.
-    if autocorrect == True or autocorrect_lower == True:
+    if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
         with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
             e.write("}")
     f.write("}")
