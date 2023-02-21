@@ -46,7 +46,7 @@ else:
     txt_file_name = os.path.basename(txt_file_path)
 
 if problem == False:
-    with open(txt_file_path, "r") as f:
+    with open(txt_file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
     random.shuffle(lines)
 
@@ -125,5 +125,5 @@ if problem == False:
     #Abridged. #The code "get_predictions.py" will automatically retrieve the
     #original word list and its abridged form from the "Dictionary" subfolder
     #within the working foler.
-    with open(os.path.join("Abridged " + txt_file_name), "w") as g:
+    with open(os.path.join("Abridged " + txt_file_name), "w", encoding="utf-8") as g:
         g.writelines(f'{word}\n' for word in english_dict)

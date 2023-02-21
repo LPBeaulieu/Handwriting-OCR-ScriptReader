@@ -366,7 +366,7 @@ if __name__ == '__main__':
         #(https://www.keithv.com/software/wlist/) and it was assembled by selecting
         #words at the intersection of 12 different word lists, such as the
         #British national corpus.
-        with open(dict_path, "r") as dict:
+        with open(dict_path, "r", encoding="utf-8") as dict:
             english_dict = dict.readlines()
         #The dictionary "Abridged wlist_match12.txt" contains the words derived from
         #the above dictionary and that at least four letter long, and that are unambiguous,
@@ -374,15 +374,15 @@ if __name__ == '__main__':
         #Of note, as the code doesn't know where the OCR error has occured within the word,
         #it is possible that that it will select a word that isn't the right one from the
         #shortened word list.
-        with open(abridged_dict_path, "r") as short_dict:
+        with open(abridged_dict_path, "r", encoding="utf-8") as short_dict:
             short_english_dict = short_dict.readlines()
 
     if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-        with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+        with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
             e.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
 
 
-    with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+') as f:
+    with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+', encoding="utf-8") as f:
         f.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
         #This code obtains the individual character coordinates from the image files
         #listed in the "JPEG_file_names" list and generates JPEG images with overlaid
@@ -1315,7 +1315,7 @@ if __name__ == '__main__':
             if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
                 corrected_text = (re.sub('[" "]+', " ", corrected_text).replace(" \\'94", "\\'94")
                 .replace(" \\'92", "\\'92").replace("--", r"\'97"))
-                with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+                with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
                     e.write(corrected_text)
             f.write(text)
 
@@ -1324,6 +1324,6 @@ if __name__ == '__main__':
         #of the ".rtf" document, as the "for JPEG_file_name in JPEG_file_names" loop is complete. The "}"
         #matches the first "{" of the prolog.
         if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-            with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+') as e:
+            with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
                 e.write("}")
         f.write("}")
