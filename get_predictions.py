@@ -258,7 +258,6 @@ if len(sys.argv) > 1:
                 autocorrect = True
                 try:
                     autocorrect_confidence = float(sys.argv[j][12:].strip())
-                    print("autocorrect_confidence: ", autocorrect_confidence)
                 except:
                     pass
             elif sys.argv[j] == "smart_quotes":
