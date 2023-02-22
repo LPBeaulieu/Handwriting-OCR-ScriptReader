@@ -16,9 +16,12 @@ from textblob import Word
 from contextlib import contextmanager
 import pathlib
 import platform
+import zipfile
 
 
 if __name__ == '__main__':
+    cwd = os.getcwd()
+
     #Import the convoluted neural network (cnn) deep learning model for OCR prediction.
     #My optimal model trained on 26 pages of typewritten text using a 1968 Olivetti Underwood Lettra 33 typewriter,
     #with a batch size of 64, a learning rate of 0.005 and 3 epochs of training yielded a validation accuracy
@@ -28,13 +31,54 @@ if __name__ == '__main__':
     if platform.system() == "Windows":
         try:
             pathlib.PosixPath = pathlib.WindowsPath
-            learn = load_learner('handwriting_OCR_cnn_model')
+            #The list "model_names" is populated with the ".zip" file names in
+            #the working folder, if the file is recognized as a zip file by the
+            #zipfile module, and if the file doesn't have an extension, when
+            #the "os.path.splitext()" method is applied to the file name. It would
+            #then give an empty string for zip files, but the ".odt" extensions wouldn't
+            #be retained in the list, although for some reason they pass the zipfile test.
+            model_names = ([file_name for file_name in sorted(os.listdir(cwd)) if
+            zipfile.is_zipfile(file_name) and os.path.splitext(file_name)[-1] == ""])
+            if model_names == []:
+                print("\nPlease include a CNN model zipped folder (.zip) in the working folder.")
+                problem = True
+            elif len(model_names) > 1:
+                print("\nPlease include a single CNN model zipped folder (.zip) in the working folder. " +
+                "Also remember to delete the github zipped project folder after extracting it in your working folder.")
+                problem = True
+            elif len(model_names) == 1:
+                model_name = os.path.basename(model_names[0])
+                if model_name != "Handwriting-OCR-ScriptReader-main":
+                    learn = load_learner(model_name)
+            else:
+                print("\nPlease include a single CNN model zipped folder (.zip) in the working folder. " +
+                "Also remember to delete the github zipped project folder after extracting it in your working folder.")
         finally:
             pathlib.PosixPath = posix_backup
     else:
-        learn = load_learner('handwriting_OCR_cnn_model')
+        #The list "model_names" is populated with the ".zip" file names in
+        #the working folder, if the file is recognized as a zip file by the
+        #zipfile module, and if the file doesn't have an extension, when
+        #the "os.path.splitext()" method is applied to the file name. It would
+        #then give an empty string for zip files, but the ".odt" extensions wouldn't
+        #be retained in the list, although for some reason they pass the zipfile test.
+        model_names = ([file_name for file_name in sorted(os.listdir(cwd)) if
+        zipfile.is_zipfile(file_name) and os.path.splitext(file_name)[-1] == ""])
+        if model_names == []:
+            print("\nPlease include a CNN model zipped folder (.zip) in the working folder.")
+            problem = True
+        elif len(model_names) > 1:
+            print("\nPlease include a single CNN model zipped folder (.zip) in the working folder. " +
+            "Also remember to delete the github zipped project folder after extracting it in your working folder.")
+            problem = True
+        elif len(model_names) == 1:
+            model_name = os.path.basename(model_names[0])
+            if model_name != "Handwriting-OCR-ScriptReader-main":
+                learn = load_learner(model_name)
+        else:
+            print("\nPlease include a single CNN model zipped folder (.zip) in the working folder. " +
+            "Also remember to delete the github zipped project folder after extracting it in your working folder.")
 
-    cwd = os.getcwd()
 
     #The list "JPEG_file_names" is populated with the ".jpg" file names in
     #the "OCR Raw Data" folder.
@@ -106,8 +150,6 @@ if __name__ == '__main__':
     elif front_JPEG_file_names in [None, []] and back_JPEG_file_names not in [None, []]:
         for i in range(len(back_JPEG_file_names)):
             JPEG_file_names.append(back_JPEG_file_names[i])
-
-
 
 
 
