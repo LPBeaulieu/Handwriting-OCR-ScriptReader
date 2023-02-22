@@ -83,7 +83,8 @@ py -m pip install textblob
 
 <b>Step 7</b>- Create the folders "Training&Validation Data" and "OCR Raw Data" in your working folder:
 ```
-mkdir "OCR Raw Data" "Training&Validation Data" 
+mkdir "OCR Raw Data" 
+mkdir "Training&Validation Data" 
 ```
 
 <b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
