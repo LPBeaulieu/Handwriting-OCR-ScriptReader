@@ -128,13 +128,9 @@ Importantly, <b>such ".txt" files should be created, modified and saved exclusiv
 <br><b>File 3: "train_model.py"</b>- This code will train a convolutional neural network deep learning model from the labeled character images 
 within the "Dataset" folder. It will also provide you with the accuracy of the model in making OCR predictions, which will be displayed
 in the command line for every epoch (run through the entire dataset). The default hyperparameters (number of epochs=3, batch size=64, 
-learning rate=0.005, kernel size=5) were optimal and consistently gave OCR accuracies above 98%, provided a good-sized dataset is used (mine was above 17,000 characters). As this is a simple deep learning task, the accuracy relies more heavily on having good quality segmentation and character images that accurately reflect those that would be found in text. When you obtain a model with good accuracy, you should rename it and do a backup of it along with the "Dataset" folder on which it was trained. If you do change the name of the model file, you also need to update its name in the line 96 of "get_predictions.py":
-```
-  learn = load_learner('handwriting_OCR_cnn_model')
-```
-Something else to keep in mind when training your CNN model is that your character images may differ in pixel size than mine. The code uses a CNN with a layer structure that was used to train my model. However, it also calculates and displays on screen the layer structure that would be fitted to your handwriting. Should you encounter any problems when training the model, you could simply replace the contents of line 90 in train_model.py with what is displayed in the PowerShell window after "CNN layer structure:".
+learning rate=0.005, kernel size=5) were optimal and consistently gave OCR accuracies above 98%, provided a good-sized dataset is used (mine was above 17,000 characters). As this is a simple deep learning task, the accuracy relies more heavily on having good quality segmentation and character images that accurately reflect those that would be found in text. When you obtain a model with good accuracy, you should rename it and do a backup of it along with the "Training&Validation Data" and "Dataset" folders on which it was trained. Once again, it is advisable to keep this data private (offline), as it contains your handwriting fingerprint of sorts, as was mentioned above.
 
-  <br><b>File 4: "get_predictions.py"</b>- This code will perform OCR on JPEG images of scanned handwritten text (at a resolution of 300 dpi and with the US Letter page size setting) that you will place in the folder "OCR Raw Data". 
+<br><b>File 4: "get_predictions.py"</b>- This code will perform OCR on JPEG images of scanned handwritten text (at a resolution of 300 dpi and with the US Letter page size setting) that you will place in the folder "OCR Raw Data". 
   
 <b>Please note that all of the JPEG file names in the "OCR Raw Data" folder must contain at least one hyphen ("-") in order for the code to properly create subfolders in the "OCR Predictions" folder. These subfolders will contain the rich text format (RTF) OCR conversion documents.</b> 
     
