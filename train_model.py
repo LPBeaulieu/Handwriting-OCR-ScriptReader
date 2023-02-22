@@ -64,19 +64,13 @@ while dimension_x != 1 or dimension_y != 1:
 #The string is assembled by passing in the numbers within every layer, with
 #the exception of the last layer before the flattening, which only contains
 #a single output activation per image.
-cnn_layers_structure = "return sequential("
+cnn_layers_structure = "sequential("
 for i in range(len(layers_list)):
     cnn_layers_structure += ("conv(" + str(layers_list[i][0]) +
     ", " + str(layers_list[i][1]) + "), ")
 
 cnn_layers_structure += ("conv(" + str(2*layers_list[i][0]) + ", " +
 str(number_of_categories) + ", activation_function = False), Flatten())")
-
-#The string corresponding to line 90, generated from the user's dataset and
-#image pixel size will be printed on screen when running this code. If the
-#user gets an error, they could try to copy and paste that code in place
-#of that line, and try again.
-print("\nCNN layer structure:\n\n", cnn_layers_structure, "\n")
 
 def get_dataloaders(batch_size=64):
     return DataBlock(
@@ -87,7 +81,8 @@ def get_dataloaders(batch_size=64):
             ).dataloaders(path, bs=batch_size)
 
 def cnn_structure():
-    return sequential(conv(1, 8), conv(8, 16), conv(16, 32), conv(32, 64), conv(64, 128), conv(128, 256), conv(256, 512), conv(512, 1024), conv(1024, number_of_categories, activation_function = False), Flatten())
+    #The string generated above is passed into the eval() method.
+    return eval(cnn_layers_structure)
 
 def fit(epochs=3, learning_rate = 0.005):
     learn = Learner(get_dataloaders(), cnn_structure(), loss_func=F.cross_entropy,
