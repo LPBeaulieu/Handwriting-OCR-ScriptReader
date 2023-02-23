@@ -46,6 +46,7 @@ the way you see it displayed on screen, so that it isn't confused with a lowerca
 - <b>"\scaps":</b> Smallcaps opening tag  <b>"\scaps0":</b> Smallcaps closing tag<br>
 - <b>"\tab":</b> Insert a tab<br>
 - <b>"\par":</b> Start a new paragraph (By defaut in my code, this already includes a tab, so no need to add one at the start of each paragraph!)<br>
+- <b>"\keepn":</b> Do not split this paragraph from the next one on different pages, if possible. This is particularly useful for heading paragraphs, so that they appear on the same page as the first paragraph of the following section.<br>
 - <b>"\qc":</b> Center this paragraph (Simply add the "\qc" after "\par", for example: "\par\qc Your Centered Paragraph").<br>
 - <b>"\qj":</b> Justified alignment for this paragraph (Simply add the "\qj" after "\par", for example: "\par\qj Your Justified Paragraph").<br>
 - <b>"\ql":</b> Left alignment for this paragraph<br> (Simply add the "\ql" after "\par", for example: "\par\ql Your Left-Aligned Paragraph").
