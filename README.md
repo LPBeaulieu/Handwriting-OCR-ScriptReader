@@ -46,10 +46,10 @@ the way you see it displayed on screen, so that it isn't confused with a lowerca
 - <b>"\scaps":</b> Smallcaps opening tag  <b>"\scaps0":</b> Smallcaps closing tag<br>
 - <b>"\tab":</b> Insert a tab<br>
 - <b>"\par":</b> Start a new paragraph (By defaut in my code, this already includes a tab, so no need to add one at the start of each paragraph!)<br>
-- <b>"\qc":</b> Center this paragraph (Be careful, as the default mode would add a tab at the beginning of each paragraph, including the centered ones.)<br>
-- <b>"\qj":</b> Justified alignment for this paragraph<br>
-- <b>"\ql":</b> Left alignment for this paragraph<br>
-- <b>"\qr":</b> Right alignment for this paragraph<br>
+- <b>"\qc":</b> Center this paragraph (Just add the "\qc" after "\par", for example: "\par\qc Your Centered Paragraph").<br>
+- <b>"\qj":</b> Justified alignment for this paragraph (Just add the "\qj" after "\par", for example: "\par\qj Your Justified Paragraph").<br>
+- <b>"\ql":</b> Left alignment for this paragraph<br> (Just add the "\ql" after "\par", for example: "\par\ql Your Left-Aligned Paragraph").
+- <b>"\qr":</b> Right alignment for this paragraph<br> (Just add the "\qr" after "\par", for example: "\par\qr Your Right-Aligned Paragraph").
 - <b>"\line":</b> Insert a line break<br>
 - <b>"\page":</b> Insert a page break<br>
 - <b>"\sbkpage":</b> Insert a section break that also starts a new page<br>
