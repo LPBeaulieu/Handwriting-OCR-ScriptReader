@@ -1029,30 +1029,30 @@ if __name__ == '__main__':
 
                 '''DEFAULT (BASIC) RTF FORMATTING MODE'''
                 #Join the elements of the "text" list and perform a series of string substitutions
-                #to yield the final text and write it as a ".rtf" file. The following line replaces
-                #every instance of at least one successive space with a single space, and then replaces
-                #"\par" with "\par\pard", to set the new paragraph's formatting to the default settings.
-                #This way, if you centered the previous paragraph (\qc), you don't need to remember
-                #to set the next paragraph to the default alignment (\ql) by adding a "\pard".
-                #For full rtf functionalities (without this last simplification), comment the next
-                #line out and activate the line after it instead.
-                text = ("".join(text).replace(r"\par", r"\par\pard\tab").replace(r"\bO", r"\b0 ")
-                .replace(r"\iO", r"\i0 ").replace(r"\scapsO", r"\scaps0 ")
-                .replace(r"\strikeO", r"\strike0 ").replace(r"\ulO", r"\ul0 ").replace(" .", ".")
-                .replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace("( ", "(")
+                #to yield the OCR text. The following line replaces replaces "\par" with "\par\pard\tab ",
+                #to set the new paragraph's formatting to the default settings and to include a tab at
+                #the start of every new paragraph. After that, any new paragraphs that had centered \
+                #alignment ("\qc") have their tab removed, so that the centered alignment isn't shifted
+                #through the inclusion of a superfluous tab. For full rtf functionalities (without this
+                #last simplification), comment the next line out and activate the lines after it instead.
+                #An extra space is included after every RTF command, in case the user forgot to include
+                #the optional space after RTF commands, which would "eat up" a regular space. Any spaces
+                #in excess of two are automatically filtered out later in the code (after changing the RTF
+                #escapes). Finally, superfluous spaces before punctuation marks or closing brackets are removed.
+                text = ("".join(text).replace(r"\par", r"\par\pard\tab").replace(r"\par\pard\tab \qc", r"\par\pard\qc ")
+                .replace(r"\par\pard\tab\qc", r"\par\pard\qc ").replace(r"\b0", r"\b0 ").replace(r"\i0", r"\i0 ")
+                .replace(r"\scaps0", r"\scaps0 ").replace(r"\strike0", r"\strike0 ").replace(r"\ul0", r"\ul0 ")
+                .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace("( ", "(")
                 .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
 
 
                 '''ADVANCED RTF FORMATTING MODE'''
-                #The following line of code is identical to the preceding one, except that there are no
-                #substitutions of "\par\pard" for "\par", and curly brackets ({}) can be used in
-                #formatting of the rtf document. Double parentheses will be converted to the
-                #corresponding curly brackets. Should you want to use the advanced rtf formatting mode,
-                #simply comment out the preceding line of code and activate the following one.
-                # text = ("".join(text).replace(r"\bO", r"\b0 ").replace(r"\iO", r"\i0 ")
-                # .replace(r"\scapsO", r"\scaps0 ").replace(r"\strikeO", r"\strike0 ").replace(r"\ulO", r"\ul0 ")
-                # .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace(" ?", "?")
-                # .replace(" !", "!").replace("( ", "(").replace(" )", ")"))
+                #See comments above in the Default (Basic) RTF formatting mode for more details.
+                # text = ("".join(text).replace(r"\b0", r"\b0 ").replace(r"\i0", r"\i0 ")
+                # .replace(r"\scaps0", r"\scaps0 ").replace(r"\strike0", r"\strike0 ")
+                # .replace(r"\ul0", r"\ul0 ").replace(" .", ".").replace(" ,", ",")
+                # .replace(" :", ":").replace(" ;", ";").replace("( ", "(")
+                # .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
 
 
                 #If the user has selected the "basic_autocorrect_lower" option, then the code
@@ -1339,10 +1339,10 @@ if __name__ == '__main__':
                     if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
                         corrected_text = re.sub(escape[0], escape[1], corrected_text)
 
-                #Successive spaces in excess of one are changed for a single space, and the
-                #extraneous spaces before closing double or single quotes are removed. Also,
-                #two successive hyphens are changed for an "em" dash.
-                text = (re.sub('[" "]+', " ", text).replace(" \\'94", "\\'94")
+                #Successive spaces in excess of two (to accomodate for any optional spaces after RTF commands)
+                #are changed for a single space, and the extraneous spaces before closing double or single quotes
+                #are removed. Also, two successive hyphens are changed for an "em" dash.
+                text = (re.sub('[" "]{2,}', " ", text).replace(" \\'94", "\\'94")
                 .replace(" \\'92", "\\'92").replace("--", r"\'97"))
                 if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
                     corrected_text = (re.sub('[" "]+', " ", corrected_text).replace(" \\'94", "\\'94")
