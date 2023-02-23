@@ -37,7 +37,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
 - Make sure that all of your characters are very distinct from one another. I suggest using bars or dots in the zeros and writings the "1"
 the way you see it displayed on screen, so that it isn't confused with a lowercase "l".
 
-- Also, the code is compatible with RTF commands (see example above) so you will need to train the model to recognize hand-drawn backslashes as well if you wish to include formatting elements such as tabs, bold, new lines and paragraphs, for instance. For an in-depth explanation of all the most common RTF commands and escapes, please consult: https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html. 
+- Also, the code is compatible with RTF commands (see example above) so you will need to train the model to recognize hand-drawn backslashes as well if you wish to include formatting elements such as tabs, bold, new lines and paragraphs, for instance. For an in-depth explanation of all the most common RTF commands and escapes, please consult: https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html.<br><br> 
 
 <b>Here is a list of the most common RTF commands (within quotes) that you are likely to need:</b><br>
 - <b>"\b":</b> Bold opening tag  <b>"\b0":</b> Bold closing tag<br>
