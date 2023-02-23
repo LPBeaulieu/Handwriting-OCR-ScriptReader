@@ -39,6 +39,24 @@ the way you see it displayed on screen, so that it isn't confused with a lowerca
 
 - Also, the code is compatible with RTF commands (see example above) so you will need to train the model to recognize hand-drawn backslashes as well if you wish to include formatting elements such as tabs, bold, new lines and paragraphs, for instance. For an in-depth explanation of all the most common RTF commands and escapes, please consult: https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html. 
 
+<b>Here is a list of the most common RTF commands (within quotes) that you are likely to need:</b><br>
+<b>"\b":</b> Bold opening tag  <b>"\b0":</b> Bold closing tag<br>
+<b>"\i":</b> <i>Italics opening tag</i>  <b>"\i0":</b> Italics closing tag<br>
+<b>"\ul":</b> Underline opening tag  <b>"\ul0":</b> Underline closing tag<br>
+<b>"\scaps":</b> Smallcaps opening tag  <b>"\scaps0":</b> Smallcaps closing tag<br>
+<b>"\tab":</b> Insert a tab<br>
+<b>"\par":</b> Start a new paragraph (By defaut in my code, this already includes a tab, so no need to add one at the start of each paragraph!)<br>
+<b>"\qc":</b> Center this paragraph (Be careful, as the default mode would add a tab at the beginning of each paragraph, including the centered ones.)<br>
+<b>"\qj":</b> Justified alignment for this paragraph<br>
+<b>"\ql":</b> Left alignment for this paragraph<br>
+<b>"\qr":</b> Right alignment for this paragraph<br>
+<b>"\line":</b> Insert a line break<br>
+<b>"\page":</b> Insert a page break<br>
+<b>"\sbkpage":</b> Insert a section break that also starts a new page<br>
+<b>"\sub":</b> Subscript (ex: "You need to drink plenty of H{\sub 2}O", where the curly brackets delimit the subscript command).<br>
+<b>"\super":</b> Superscript (ex: "This is the 1{\super st} time that I use RTF commands!}").<br>
+
+
 - To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, the use of curly brackets "{}" is disabled and "\par" is changed for "\par\pard\tab" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values, and a tab is included automatically when a new paragraph is started by writing "\par". The <b>advanced RTF mode</b> just interprets the RTF commands as you write them.
 
 My preliminary tests with over 17 000 characters of training data (29 pages of cursive handwriting on the <b>ScriptReader</b> pages, with 0.13 inch dot spacing and double line spacing) gave me an OCR accuracy above 98%, and I am still adding more data to the model, so there is room for improvement.
