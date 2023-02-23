@@ -54,10 +54,10 @@ the way you see it displayed on screen, so that it isn't confused with a lowerca
 - <b>"\page":</b> Insert a page break<br>
 - <b>"\sbkpage":</b> Insert a section break that also starts a new page<br>
 - <b>"\sub":</b> Subscript (ex: "You need to drink plenty of H{\sub 2}O", where the curly brackets delimit the subscript command).<br>
-- <b>"\super":</b> Superscript (ex: "This is the 1{\super st} time that I use RTF commands!}").<br>
+- <b>"\super":</b> Superscript (ex: "This is the 1{\super st} time that I use RTF commands!}").<br><br>
 
 
-- To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, the use of curly brackets "{}" is disabled and "\par" is changed for "\par\pard\tab" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values, and a tab is included automatically when a new paragraph is started by writing "\par". The <b>advanced RTF mode</b> just interprets the RTF commands as you write them.
+To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, "\par" is changed for "\par\pard\tab" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values, and a tab is included automatically when a new paragraph is started by writing "\par". The <b>advanced RTF mode</b> just interprets the RTF commands as you write them.
 
 My preliminary tests with over 17 000 characters of training data (29 pages of cursive handwriting on the <b>ScriptReader</b> pages, with 0.13 inch dot spacing and double line spacing) gave me an OCR accuracy above 98%, and I am still adding more data to the model, so there is room for improvement.
 
