@@ -376,30 +376,23 @@ with alive_bar(len(JPEG_file_names)) as bar:
         (x_center_right_square-x_center_left_square))
         slope_angle = np.arctan(slope)
 
-        #The black squares on the untilted page were brought down by "top_y_shift" pixels,
-        #along with the dot grid, so the center of these squares would be a good "y" reference
-        #point to adjust for any discrepancy on the "y" pixel on which the scan image starts.
-        #That is to say, if the scanned image started a bit earlier because the page was partially
-        #drawn in when the previous page was scanned, then the center point of one of the black
-        #rectangles would appear higher up on the page. By correcting the "y" coordinate on the
-        #printed page to account for the tilt angle, it is then possible to calculate the
-        #"y_discrepancy" that amounts to the difference in pixels in-between the center of the
-        #square in the unprinted, untilted page, and that of the square in the printed page, once
-        #it has been corrected for the tilt angle.
-        untilted_square_center_y = left_margin_x_pixel + top_y_shift + 25
-        y_discrepancy = (y_center_left_square + (dot_x_coordinates[-1]-
-        dot_x_coordinates[0]-50)*np.sin(slope_angle)-untilted_square_center_y)
+        #As the black rectangles are shifted down by the same amount of pixels as the dot grid,
+        #the number of pixels on the "y" axis, between the center of the squares and the topmost
+        #dots remains constant and can be used to determine the exact "y" coordinates of the top
+        #left and top right dots, based on the "y" center coordinate of the left and right squares,
+        #respectively.
+        pixels_between_centers_of_black_square_and_top_dot = top_margin_y_pixel - (left_margin_x_pixel + 25)
+        top_left_dot_y = round(y_center_left_square + pixels_between_centers_of_black_square_and_top_dot)
+        top_right_dot_y = round(y_center_right_square + pixels_between_centers_of_black_square_and_top_dot)
 
-        #The x,y coordinates of the top left and right dots are determined by
+        #The x coordinates of the top left and right dots are determined by
         #trigonometric calculations, using the known values for the margins
         #and horizontal distance between these dots in the untilted image
         #as the hypothenuses, and the tilt angle.
         top_left_dot_x = round(x_center_left_square - 25*np.cos(slope_angle))
-        top_left_dot_y = round((image_top_margin_y_pixel)*np.cos(slope_angle))
         top_right_dot_x = round(x_center_left_square - 25*np.cos(slope_angle) +
-        (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.cos(slope_angle) + y_discrepancy)
-        top_right_dot_y = round((image_top_margin_y_pixel)*np.cos(slope_angle) +
-        (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.sin(slope_angle) + y_discrepancy)
+        (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.cos(slope_angle))
+
 
         #The rectangles are drawn on "text_image_copy" to allow users to evaluate
         #how well the segmentation has proceeded.
@@ -410,7 +403,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         round(y_center_left_square-25*np.cos(slope_angle))), (round(x_center_left_square+25*np.cos(slope_angle)),
         round(y_center_left_square+25*np.cos(slope_angle))), (0,0,255),3)
         #Left black square: A blue rectangle is drawn so as to outline the
-        #the slicing region of the original "image_filtered" for the "np.sum" operation
+        #slicing region of the original "image_filtered" for the "np.sum" operation
         cv2.rectangle(text_image_copy, (round(dot_x_coordinates[0]-100),
         0), (round(dot_x_coordinates[0]+150),
         round(dot_y_coordinates[0]-100)), (255,0,0),3)
@@ -421,7 +414,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         round(y_center_right_square-25*np.cos(slope_angle))), (round(x_center_right_square+25*np.cos(slope_angle)),
         round(y_center_right_square+25*np.cos(slope_angle))), (0,0,255),3)
         #Right black square: A blue rectangle is drawn so as to outline the
-        #the slicing region of the original "image_filtered" for the "np.sum" operation
+        #slicing region of the original "image_filtered" for the "np.sum" operation
         cv2.rectangle(text_image_copy, (round(dot_x_coordinates[-1]-150),
         0), (round(dot_x_coordinates[-1]+100),
         round(dot_y_coordinates[0]-100)), (255,0,0),3)
@@ -471,13 +464,6 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 #four dot square chracter grid ("x_overlap") is added to allow for the last character on
                 #the line to have a horizontal overlap as well.
                 x_threshold = top_right_dot_x + x_overlap
-                #The "y" threshold is determined by calculating the total height of the untilted dot grid, in pixels
-                #("dot_y_coordinates[text_line_numbers[-1]]-dot_y_coordinates[text_line_numbers[0]]"), multiplying
-                #it by the cosine of the slope angle, and then adding the "y" coordinate of the top left corner dot
-                #("top_left_dot_y") to bring the threshold relative to the top left corner of the page, and the
-                #vertical overlap pixels ("y_overlap").
-                y_threshold = (round(top_left_dot_y + (dot_y_coordinates[text_line_numbers[-1]]-
-                dot_y_coordinates[text_line_numbers[0]])*np.cos(slope_angle)) + y_overlap)
             elif slope < 0:
                 next_line_x = (round(top_left_dot_x - (dot_y_coordinates[text_line_numbers[j]]-
                 dot_y_coordinates[text_line_numbers[0]])*np.sin(slope_angle)))
@@ -489,8 +475,6 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 #equal to the total height of the dot grid in the untilted page).
                 x_threshold = (round(top_right_dot_x - (dot_y_coordinates[text_line_numbers[-1]]-
                 dot_y_coordinates[text_line_numbers[0]])*np.sin(slope_angle) + x_overlap))
-                y_threshold = (round(top_right_dot_y + (dot_y_coordinates[text_line_numbers[-1]]-
-                dot_y_coordinates[text_line_numbers[0]])*np.cos(slope_angle)) + y_overlap)
             #If the scanned page is untilted (well done!), the "next_line_x" would line up exactly with the
             #"top_left_dot" the "next_line_y" would be the the cumulative vertical distance from the origin
             #up to che current line in the untilted page, which doesn't need to be corrected by trigonometric
@@ -502,10 +486,6 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 #As the page isn't tilted, all of the right coordinates will line up to the top right dot
                 #"x" coordinate, with the addition of the "x_overlap".
                 x_threshold = top_right_dot_x + x_overlap
-                #The "y_threshold" is simply the total height of the dot grid, added to the top_right_dot_y
-                #(the top_left_dot_y would have done just as well.)
-                y_threshold = (top_right_dot_y + (dot_y_coordinates[text_line_numbers[-1]]-
-                dot_y_coordinates[text_line_numbers[0]]))
             #A new empty list is added to the "chars_x_y_coordinates" list at the start of every new line.
             chars_x_y_coordinates.append([])
 
@@ -526,10 +506,9 @@ with alive_bar(len(JPEG_file_names)) as bar:
                 #and "get_next_y(current_y,k)" functions, respectively.
                 next_x = get_next_x(k)
                 next_y = get_next_y(k)
-                #If the "next_x" is lower than the "x_threshold" and the "next_y" is inferior to
-                #the "y_threshold", then the rectangle it is included in the "chars_x_y_coordinates"
-                #list at the current "j" line index.
-                if next_x < x_threshold and next_y < y_threshold:
+                #If the "next_x" is lower than the "x_threshold", then the rectangle is
+                #included in the "chars_x_y_coordinates" list at the current "j" line index.
+                if next_x < x_threshold:
                     chars_x_y_coordinates[j].append([[current_x,
                     current_y], [next_x, next_y+pixels_between_dots]])
                     #The rectangles are drawn on "text_image_copy" to allow users to evaluate
@@ -823,6 +802,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #every image being placed in a folder corresponding to its label (labels were obtained from a txt file
         #named after the "JPEG_file_names[i]"). The counter "char_index" is initialized to zero before the
         #"for i in range(len(JPEG_file_names))" loop to avoid overwriting character images in the "Dataset" folder.
+
         for j in range(len(chars_x_y_coordinates)):
             for k in range(len(chars_x_y_coordinates[j])):
                 cropped_char = (text_image_gray[chars_x_y_coordinates[j][k][0][1]:

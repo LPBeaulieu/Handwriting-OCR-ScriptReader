@@ -210,7 +210,7 @@ if __name__ == '__main__':
         #confidence threshold for the correction of mistakes by entering the decimal
         #probability after the "autocorrect:" argument.
         autocorrect = False
-        autocorrect_confidence = 0.90
+        autocorrect_confidence = 1
         #If there is at least one instance of a non-directional single "'" or
         #double '"' quote in the "text" string, or if the user has selected the
         #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
@@ -349,9 +349,9 @@ if __name__ == '__main__':
 
 
         if basic_autocorrect == True or basic_autocorrect_lower == True:
-            #The 27K word list ("wlist_match7.txt") was found at the following link
+            #The 143K word list ("wlist_match7.txt") was found at the following link
             #(https://www.keithv.com/software/wlist/) and it was assembled by selecting
-            #words at the intersection of 12 different word lists, such as the
+            #words at the intersection of 7 different word lists, such as the
             #British national corpus.
 
             #The dictionary text files are retrieved using the "glob" module.
@@ -380,6 +380,7 @@ if __name__ == '__main__':
                         abridged_dict_path = file
                     else:
                         dict_path = file
+                        print("dict_path: ", dict_path)
             else:
                 print("\nPlease include a text file (.txt) containing " +
                 'the comprehensive list of words that you wish to use in the "Dictionary" subfolder ' +
@@ -387,18 +388,29 @@ if __name__ == '__main__':
                 'starts with "Abridged".')
 
 
-            #The 27K word list ("wlist_match12.txt") was found at the following link
+            #The 143 word list ("wlist_match7.txt") was found at the following link
             #(https://www.keithv.com/software/wlist/) and it was assembled by selecting
-            #words at the intersection of 12 different word lists, such as the
+            #words at the intersection of 7 different word lists, such as the
             #British national corpus.
             with open(dict_path, "r", encoding="utf-8") as dict:
                 english_dict = dict.readlines()
-            #The dictionary "Abridged wlist_match12.txt" contains the words derived from
-            #the above dictionary and that at least four letter long, and that are unambiguous,
-            #in that they differ from one another by more than one letter/sequence of letters.
+            #The dictionary "Abridged wlist_match12.txt" comprises the words derived from
+            #the more restricted dictionary 27K-word dictionary ("wlist_match12.txt"),
+            #containing the most common words in the English language that are at least
+            #four letter long as well as unambiguous, in that they differ from one another
+            #by more than one letter/sequence of letters.
             #Of note, as the code doesn't know where the OCR error has occured within the word,
             #it is possible that that it will select a word that isn't the right one from the
             #shortened word list.
+
+            #If the user has selected one of the  "basic_autocorrect" options, then the code
+            #will screen the misspelled words in the page (words that aren't found
+            #within the more extensive "english_dict", here based on a 143K-word
+            #dictionary "wlist_match7.txt") to see if any of them could be corrected by
+            #altering one letter, and that the resulting word could be found in
+            #the 15K-unambiguous word dictionary "short_english_dict", itself
+            #derived from the 27K-word dictionary "wlist_match12.txt". If so,
+            #the substitution would be made.
             with open(abridged_dict_path, "r", encoding="utf-8") as short_dict:
                 short_english_dict = short_dict.readlines()
 
@@ -413,6 +425,7 @@ if __name__ == '__main__':
             #listed in the "JPEG_file_names" list and generates JPEG images with overlaid
             #character rectangles, named after the original files, but with the added
             #"with character rectangles" suffix.
+
             for i in range(len(JPEG_file_names)):
                 print(f'\nCurrently processing image entitled: "{JPEG_file_names[i]}"\n')
                 #The "image_top_margin_y_pixel" and
@@ -617,30 +630,23 @@ if __name__ == '__main__':
                 (x_center_right_square-x_center_left_square))
                 slope_angle = np.arctan(slope)
 
-                #The black squares on the untilted page were brought down by "top_y_shift" pixels,
-                #along with the dot grid, so the center of these squares would be a good "y" reference
-                #point to adjust for any discrepancy on the "y" pixel on which the scan image starts.
-                #That is to say, if the scanned image started a bit earlier because the page was partially
-                #drawn in when the previous page was scanned, then the center point of one of the black
-                #rectangles would appear higher up on the page. By correcting the "y" coordinate on the
-                #printed page to account for the tilt angle, it is then possible to calculate the
-                #"y_discrepancy" that amounts to the difference in pixels in-between the center of the
-                #square in the unprinted, untilted page, and that of the square in the printed page, once
-                #it has been corrected for the tilt angle.
-                untilted_square_center_y = left_margin_x_pixel + top_y_shift + 25
-                y_discrepancy = (y_center_left_square + (dot_x_coordinates[-1]-
-                dot_x_coordinates[0]-50)*np.sin(slope_angle)-untilted_square_center_y)
+                #As the black rectangles are shifted down by the same amount of pixels as the dot grid,
+                #the number of pixels on the "y" axis, between the center of the squares and the topmost
+                #dots remains constant and can be used to determine the exact "y" coordinates of the top
+                #left and top right dots, based on the "y" center coordinate of the left and right squares,
+                #respectively.
+                pixels_between_centers_of_black_square_and_top_dot = top_margin_y_pixel - (left_margin_x_pixel + 25)
+                top_left_dot_y = round(y_center_left_square + pixels_between_centers_of_black_square_and_top_dot)
+                top_right_dot_y = round(y_center_right_square + pixels_between_centers_of_black_square_and_top_dot)
 
-                #The x,y coordinates of the top left and right dots are determined by
+                #The x coordinates of the top left and right dots are determined by
                 #trigonometric calculations, using the known values for the margins
                 #and horizontal distance between these dots in the untilted image
                 #as the hypothenuses, and the tilt angle.
                 top_left_dot_x = round(x_center_left_square - 25*np.cos(slope_angle))
-                top_left_dot_y = round((image_top_margin_y_pixel)*np.cos(slope_angle))
                 top_right_dot_x = round(x_center_left_square - 25*np.cos(slope_angle) +
-                (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.cos(slope_angle) + y_discrepancy)
-                top_right_dot_y = round((image_top_margin_y_pixel)*np.cos(slope_angle) +
-                (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.sin(slope_angle) + y_discrepancy)
+                (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.cos(slope_angle))
+
 
                 #The rectangles are drawn on "text_image_copy" to allow users to evaluate
                 #how well the segmentation has proceeded.
@@ -651,7 +657,7 @@ if __name__ == '__main__':
                 round(y_center_left_square-25*np.cos(slope_angle))), (round(x_center_left_square+25*np.cos(slope_angle)),
                 round(y_center_left_square+25*np.cos(slope_angle))), (0,0,255),3)
                 #Left black square: A blue rectangle is drawn so as to outline the
-                #the slicing region of the original "image_filtered" for the "np.sum" operation
+                #slicing region of the original "image_filtered" for the "np.sum" operation
                 cv2.rectangle(text_image_copy, (round(dot_x_coordinates[0]-100),
                 0), (round(dot_x_coordinates[0]+150),
                 round(dot_y_coordinates[0]-100)), (255,0,0),3)
@@ -662,7 +668,7 @@ if __name__ == '__main__':
                 round(y_center_right_square-25*np.cos(slope_angle))), (round(x_center_right_square+25*np.cos(slope_angle)),
                 round(y_center_right_square+25*np.cos(slope_angle))), (0,0,255),3)
                 #Right black square: A blue rectangle is drawn so as to outline the
-                #the slicing region of the original "image_filtered" for the "np.sum" operation
+                #slicing region of the original "image_filtered" for the "np.sum" operation
                 cv2.rectangle(text_image_copy, (round(dot_x_coordinates[-1]-150),
                 0), (round(dot_x_coordinates[-1]+100),
                 round(dot_y_coordinates[0]-100)), (255,0,0),3)
@@ -712,13 +718,6 @@ if __name__ == '__main__':
                         #four dot square chracter grid ("x_overlap") is added to allow for the last character on
                         #the line to have a horizontal overlap as well.
                         x_threshold = top_right_dot_x + x_overlap
-                        #The "y" threshold is determined by calculating the total height of the untilted dot grid, in pixels
-                        #("dot_y_coordinates[text_line_numbers[-1]]-dot_y_coordinates[text_line_numbers[0]]"), multiplying
-                        #it by the cosine of the slope angle, and then adding the "y" coordinate of the top left corner dot
-                        #("top_left_dot_y") to bring the threshold relative to the top left corner of the page, and the
-                        #vertical overlap pixels ("y_overlap").
-                        y_threshold = (round(top_left_dot_y + (dot_y_coordinates[text_line_numbers[-1]]-
-                        dot_y_coordinates[text_line_numbers[0]])*np.cos(slope_angle)) + y_overlap)
                     elif slope < 0:
                         next_line_x = (round(top_left_dot_x - (dot_y_coordinates[text_line_numbers[j]]-
                         dot_y_coordinates[text_line_numbers[0]])*np.sin(slope_angle)))
@@ -730,8 +729,6 @@ if __name__ == '__main__':
                         #equal to the total height of the dot grid in the untilted page).
                         x_threshold = (round(top_right_dot_x - (dot_y_coordinates[text_line_numbers[-1]]-
                         dot_y_coordinates[text_line_numbers[0]])*np.sin(slope_angle) + x_overlap))
-                        y_threshold = (round(top_right_dot_y + (dot_y_coordinates[text_line_numbers[-1]]-
-                        dot_y_coordinates[text_line_numbers[0]])*np.cos(slope_angle)) + y_overlap)
                     #If the scanned page is untilted (well done!), the "next_line_x" would line up exactly with the
                     #"top_left_dot" the "next_line_y" would be the the cumulative vertical distance from the origin
                     #up to che current line in the untilted page, which doesn't need to be corrected by trigonometric
@@ -743,10 +740,6 @@ if __name__ == '__main__':
                         #As the page isn't tilted, all of the right coordinates will line up to the top right dot
                         #"x" coordinate, with the addition of the "x_overlap".
                         x_threshold = top_right_dot_x + x_overlap
-                        #The "y_threshold" is simply the total height of the dot grid, added to the top_right_dot_y
-                        #(the top_left_dot_y would have done just as well.)
-                        y_threshold = (top_right_dot_y + (dot_y_coordinates[text_line_numbers[-1]]-
-                        dot_y_coordinates[text_line_numbers[0]]))
                     #A new empty list is added to the "chars_x_y_coordinates" list at the start of every new line.
                     chars_x_y_coordinates.append([])
 
@@ -767,10 +760,9 @@ if __name__ == '__main__':
                         #and "get_next_y(current_y,k)" functions, respectively.
                         next_x = get_next_x(k)
                         next_y = get_next_y(k)
-                        #If the "next_x" is lower than the "x_threshold" and the "next_y" is inferior to
-                        #the "y_threshold", then the rectangle it is included in the "chars_x_y_coordinates"
-                        #list at the current "j" line index.
-                        if next_x < x_threshold and next_y < y_threshold:
+                        #If the "next_x" is lower than the "x_threshold", then the rectangle is
+                        #included in the "chars_x_y_coordinates" list at the current "j" line index.
+                        if next_x < x_threshold:
                             chars_x_y_coordinates[j].append([[current_x,
                             current_y], [next_x, next_y+pixels_between_dots]])
                             #The rectangles are drawn on "text_image_copy" to allow users to evaluate
@@ -893,14 +885,6 @@ if __name__ == '__main__':
                 (cv2.imwrite(os.path.join(cwd, 'Page image files with rectangles', JPEG_file_names[i][:-4] +
                 ' with character rectangles.jpg'), text_image_copy))
 
-                #An ".rtf" file is created and a basic document prolog is added. The closing curly bracket (}) is
-                #added at the very end of the code, when the "for JPEG_file_name in image names" loop is complete.
-                #For further information on ".rtf" commands, please consult the RTF Pocket Guide, available
-                #free of charge online at the following address:
-                #https://www.oreilly.com/library/view/rtf-pocket-guide/9781449302047/ch01.html
-                if i > 0:
-                    f.write(" ")
-
                 char_files = []
                 char_index = 0
                 for j in range(len(chars_x_y_coordinates)):
@@ -940,7 +924,6 @@ if __name__ == '__main__':
 
                 #Substitute the actual character labels for the labels that were written in long
                 #form for compatibility reasons.
-                quote_open = False
                 for j in range(len(text)-1, -1, -1):
                     #If the label is "empty" (a typo overlaid with a hashtag symbol),
                     #replace those characters with " ". Superfluous spaces are removed at the end of the code
@@ -1057,9 +1040,12 @@ if __name__ == '__main__':
 
                 #If the user has selected the "basic_autocorrect_lower" option, then the code
                 #will screen the misspelled words in the page (words that aren't found
-                #within "english_dict") to see if any of them could be corrected by
+                #within the more extensive "english_dict", here based on a 143K-word
+                #dictionary "wlist_match7.txt") to see if any of them could be corrected by
                 #altering one letter, and that the resulting word could be found in
-                #the "short_english_dict". If so, the substitution would be made.
+                #the 15K-unambiguous word dictionary "short_english_dict", itself
+                #derived from the 27K-word dictionary "wlist_match12.txt". If so,
+                #the substitution would be made.
                 #Also, the corrected word would only be in uppercase if every letter
                 #of the misspelled word was in uppercase as well. Otherwise, the
                 #corrected word will be in lowercase. The autocorrection steps
@@ -1071,7 +1057,7 @@ if __name__ == '__main__':
                     word_list = re.split(r'(\W+)', text)
                     for j in range(len(word_list)):
                         if (word_list[j].isalpha() and word_list[j][0].islower() and
-                        len(word_list[j]) > 4 and word_list[j] not in english_dict):
+                        len(word_list[j]) > 4 and word_list[j] + "\n" not in english_dict):
                             len_misspelled_word = len(word_list[j])
                             start_misspelled_word = word_list[j][:3]
                             end_misspelled_word = word_list[j][-3:]
@@ -1092,11 +1078,14 @@ if __name__ == '__main__':
                     corrected_text = "".join(word_list)
 
 
-                #If the user has selected the "basic_autocorrect" option, then the code
+                #If the user has selected the "basic_autocorrect_lower" option, then the code
                 #will screen the misspelled words in the page (words that aren't found
-                #within "english_dict") to see if any of them could be corrected by
+                #within the more extensive "english_dict", here based on a 143K-word
+                #dictionary "wlist_match7.txt") to see if any of them could be corrected by
                 #altering one letter, and that the resulting word could be found in
-                #the "short_english_dict". If so, the substitution would be made.
+                #the 15K-unambiguous word dictionary "short_english_dict", itself
+                #derived from the 27K-word dictionary "wlist_match12.txt". If so,
+                #the substitution would be made.
                 #Also, the corrected word would be in uppercase if every letter
                 #of the misspelled word was in uppercase as well. If only the first
                 #letter of the misspelt word was in uppercase, then the corrected
@@ -1106,7 +1095,7 @@ if __name__ == '__main__':
                     word_list = re.split(r'(\W+)', text)
                     for j in range(len(word_list)):
                         if (word_list[j].isalpha() and len(word_list[j]) > 4 and
-                        word_list[j] not in english_dict):
+                        word_list[j] + "\n" not in english_dict):
                             len_misspelled_word = len(word_list[j])
                             start_misspelled_word = word_list[j][:3]
                             end_misspelled_word = word_list[j][-3:]
