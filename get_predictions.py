@@ -1332,7 +1332,7 @@ if __name__ == '__main__':
                 #are changed for a single space, and the extraneous spaces before closing double or single quotes
                 #are removed. Also, two successive hyphens are changed for an "em" dash.
                 text = (re.sub('[" "]{2,}', " ", text).replace(" \\'94", "\\'94")
-                .replace(" \\'92", "\\'92").replace("--", r"\'97"))
+                .replace(" \\'92", "\\'92").replace("\\'2d\\'2d", r"\'97"))
                 if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
                     corrected_text = (re.sub('[" "]+', " ", corrected_text).replace(" \\'94", "\\'94")
                     .replace(" \\'92", "\\'92").replace("--", r"\'97"))
