@@ -118,6 +118,9 @@ For a basic template, simply pass in "scriptreader:" as an additional argument w
 ![Punching instructions](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/Officemate%20Heavy%20Duty%20Adjustable%202-3%20Hole%20Punch%20with%20Lever%20Handle.png)<hr>
 Once you have printed your notebook, you could punch 3 holes at the standard 2.75 inch spacing of Junior ring binders, using the instructions of the imabe above, for an Officemate Heavy Duty Adjustable 2-3 Hole Punch with Lever Handle, which could readily punch holes 10 sheets of 28 lb half letter paper in my experience (while I'm not affiliated with that hole punch, I do recommend it).<br><br>
 
+![Punched notebooks](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/Punched%20Notebooks.jpg)<hr>
+Here is what the notebooks you generate might look like! <br><br>
+
 There are four different Python code files that are to be run in sequence. You can find instructional videos on <b>ScriptReader</b> usage on my YouTube channel: **The link will be posted when the videos are uploaded**.<br><br>
 <b>File 1: "create_rectangles.py"</b>- This Python code enables you to see the segmentation results (the green rectangles delimiting
 the individual characters on the handwritten scanned image) and then write a ".txt" file with the correct labels for each rectangle. The mapping
