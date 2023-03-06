@@ -78,7 +78,7 @@ Start by holding the "Shift" key while right-clicking in your working folder, th
 pip3 install torch torchvision torchaudio
 ```
 
-<b>Step 2</b>- Install the <i>CPU-only</i> version of <b>Fastai</b>, which is a deep learning Python library. The CPU-only version suffices for this application, at least when running on Linux, as the character images are very small in size):
+<b>Step 2</b>- Install the <i>CPU-only</i> version of <b>Fastai</b>, which is a deep learning Python library. The CPU-only version suffices for this application, at least when running on Linux, as the character images are very small in size:
 ```
 py -m pip install fastai
 ```
