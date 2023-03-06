@@ -71,6 +71,8 @@ allow to run a copy of <b>ScriptReader</b> on a local computer.
 
 The instructions below are for Windows operating systems, and while I am not 100% sure that it is able to run on Windows, I made every effort to adapt the code so that it would be compatible, but the code runs very nicely on Linux.
 
+Start by holding the "Shift" key while right-clicking in your working folder, then select "Open PowerShell window here" to access the PowerShell in your working folder and enter the commands described below.
+
 <b>Step 1</b>- Install <b>PyTorch</b> (Required Fastai library to convert images into a format usable for deep learning) using the following command (or the equivalent command found at https://pytorch.org/get-started/locally/ suitable to your system):
 ```
 pip3 install torch torchvision torchaudio
