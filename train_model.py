@@ -84,7 +84,7 @@ def cnn_structure():
     #The string generated above is passed into the eval() method.
     return eval(cnn_layers_structure)
 
-def fit(epochs=3, learning_rate = 0.005):
+def fit(epochs=5, learning_rate = 0.003):
     learn = Learner(get_dataloaders(), cnn_structure(), loss_func=F.cross_entropy,
                     metrics = accuracy, cbs=ActivationStats(with_hist=True))
     learn.fit_one_cycle(epochs, learning_rate)
