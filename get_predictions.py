@@ -80,12 +80,7 @@ if __name__ == '__main__':
         #give the following extracted name: "Alice's Adventures in Wonderland Chapter 1")
 
         if front_JPEG_file_names not in [None, []]:
-            hyphen_matches = re.finditer("-", front_JPEG_file_names[0])
-            hyphen_indices = []
-            for match in hyphen_matches:
-                hyphen_indices.append(match.start())
-            OCR_text_file_name = front_JPEG_file_names[0][:hyphen_indices[-1]]
-
+            OCR_text_file_name = re.findall("(.+)_\d+.jpg", front_JPEG_file_names[0])[0]
 
         #The list "back_JPEG_file_names" is populated with the ".jpg" file names in
         #the "OCR Raw Data" folder.
@@ -93,15 +88,7 @@ if __name__ == '__main__':
         "OCR Raw Data"))) if (file_name[:4].lower()=="back" and file_name[-4:] == ".jpg")])
 
         if back_JPEG_file_names not in [None, []]:
-            #The user has simply reversed the stack of papers into the multi-
-            #page scanner, resulting in the page numbers being reversed.
-            #The "sort()" method will put them in the correct sequence.
-            back_JPEG_file_names.sort(reverse=True)
-            hyphen_matches = re.finditer("-", back_JPEG_file_names[0])
-            hyphen_indices = []
-            for match in hyphen_matches:
-                hyphen_indices.append(match.start())
-            OCR_text_file_name = back_JPEG_file_names[0][4:hyphen_indices[-1]].strip()
+            OCR_text_file_name = re.findall("(.+)_\d+.jpg", back_JPEG_file_names[0])[0]
 
         #The folder "OCR Predictions" is created in the working folder, if
         #not already present.
@@ -270,7 +257,7 @@ if __name__ == '__main__':
                         gutter_margin_width_pixels = round(float(sys.argv[i].lower()[14:].strip())*300)
                     elif sys.argv[j].lower()[:19] == "lines_between_text:":
                         lines_between_text = int(sys.argv[j].lower()[19:].strip())
-                    elif sys.argv[j].lower().split(":")[0] in ["scriptreader", "scriptreader_left", "scriptreader_right"]:
+                    elif sys.argv[j].lower().split(":")[0] in ["scriptreader", "scriptreader_left", "scriptreader_right", "scriptreader_acetate"]:
                         #If the user has selected to print some custom
                         #dot grid pages for use in the handwriting OCR
                         #application ScriptReader, they will likely want
