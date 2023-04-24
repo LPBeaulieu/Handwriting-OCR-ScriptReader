@@ -126,7 +126,7 @@ In the image above, the left portion was printed on the front side and is mirror
 python3 printanotebook.py "title:Notes and Thoughts (Volume 1)" "author:Louis-Philippe Bonhomme-Beaulieu" "number_of_pages:100" "page_numbers" "heading_text_right:Date:                " "scriptreader_acetate:0.13:5:1:2:0.75" "toc_pages_spacing:26"
 ```
 
-It is preferable to scan transparencies on a flatbed scanner, in order to avoid scratching and damaging them in a multi-page scanner. This should still save you lots of time when compared to typing all these pages on the computer! When scanning pages on a flatbed scanner, make sure to place the page such that its top left corner is in the top left corner of the scanned image, as shown in the image below.
+It is preferable to scan transparencies on a flatbed scanner (at a resolution of 300 dpi and with the US Letter page size setting), in order to avoid scratching and damaging them in a multi-page scanner. This should still save you lots of time when compared to typing all these pages on the computer! When scanning pages on a flatbed scanner, make sure to place the page such that its top left corner is in the top left corner of the scanned image, as shown in the image below.
 
 ![Transparency scanned on a flatbed scanner]()<hr>
 The photo above shows a transparency that was scanned on a flatbed scanner. Notice that the top left corner of the transparency lines up with the top left corner of the scan. It is important that you scan your images in such a way on the flatbed scanner, so that the character segmentation might proceed smoothly.
