@@ -137,7 +137,7 @@ Once you have printed your notebook, you could punch 3 holes at the standard 2.7
 ![Punched notebooks](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/Punched%20Notebooks.jpg)<hr>
 Here is what the notebooks you generate might look like! <br><br>
 
-There are four different Python code files that are to be run in sequence. You can find instructional videos on <b>ScriptReader</b> usage on my YouTube channel: https://www.youtube.com/watch?v=5XnhUkTdUfY&list=PL8fAaOg_mhoH1wGlEZshxlL9LM7L2w8e_.<br><br>
+There are four different Python code files that are to be run in sequence. You can find instructional videos on <b>ScriptReader</b> usage on my YouTube channel: https://youtube.com/playlist?list=PL8fAaOg_mhoH1wGlEZshxlL9LM7L2w8e_.<br><br>
 <b>File 1: "create_rectangles.py"</b>- This Python code enables you to see the segmentation results (the green rectangles delimiting
 the individual characters on the handwritten scanned image) and then write a ".txt" file with the correct labels for each rectangle. The mapping
 of every rectangle to a label will allow to generate a dataset of character images with their corresponding labels. The handwritten
