@@ -104,7 +104,7 @@ if len(sys.argv) > 1:
                 gutter_margin_width_pixels = round(float(sys.argv[i].lower()[14:].strip())*300)
             elif sys.argv[j].lower()[:19] == "lines_between_text:":
                 lines_between_text = int(sys.argv[j].lower()[19:].strip())
-            elif sys.argv[j].lower().split(":")[0] in ["scriptreader", "scriptreader_left", "scriptreader_right"]:
+            elif sys.argv[j].lower().split(":")[0] in ["scriptreader", "scriptreader_left", "scriptreader_right", "scriptreader_acetate"]:
                 #If the user has selected to print some custom
                 #dot grid pages for use in the handwriting OCR
                 #application ScriptReader, they will likely want
@@ -211,11 +211,25 @@ with alive_bar(len(JPEG_file_names)) as bar:
             #designetes whether the page is even or odd numbered, with the
             #file names for even-numbered pages starting with "back".
 
-            #The pixel at which the actual page scan begins is dermined by
-            #taking dividing the difference between the image width and
-            #1650, which is the number of pixels for the page width of 5.5
-            #inches at 300 ppi resolution, by two.
-            image_border_to_start_of_page_x_pixels = round(imgwidth-1650)/2
+            #In a multi-page scanner, a half-letter page scanned in portrait mode
+            #will end up being centered on the image, with an image height of the pixel
+            #equivalent of 8 1/2 inches (2550 px at 300 dpi) and an image width of around
+            #2550 px as well, as the maximal width of the multi-page scanner page feeder
+            #is a little over 8 1/2 inches. This means that the height/width aspect ratio
+            #for images scanned on a multi-page scanner will be around 1.00, while those
+            #scanned on a flatbed scanner will be around 11/8.5 = 1.29.
+            if imgheight/imgwidth < 1.2:
+                #For pages scanned on a multi-page scanner, the pixel at which the
+                #actual page scan begins is dermined by taking dividing the difference
+                #between the image width and 1650, which is the number of pixels for
+                #the page width of 5.5 inches at 300 ppi resolution, by two.
+                image_border_to_start_of_page_x_pixels = round(imgwidth-1650)/2
+            else:
+                #For pages scanned on the flatbed scanner, and of which the top left
+                #corner of the scanned page lines up with the top-left corner of the image,
+                #the value of "image_border_to_start_of_page_x_pixels" is set to zero, as
+                #the page is lined up with the left edge of the image.
+                image_border_to_start_of_page_x_pixels = 0
             #If the page is even-numbered (the file name is starts with "back"
             #for "back page"), then the "starting_x" pixel is initialized to
             #"left_margin_x_pixel".
@@ -317,9 +331,9 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #y coordinate. The same is done for the columns, with a summation along the 0 axis.
         #image_filtered = np.where(text_image_gray>200, 0, 1)
         image_filtered = np.where(text_image_gray>100, 0, 1)
-        y_pixels_left_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
+        y_pixels_left_square = np.sum(image_filtered[25:round(dot_y_coordinates[0]-100),
         round(dot_x_coordinates[0]-100):round(dot_x_coordinates[0]+150)], axis=1)
-        x_pixels_left_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
+        x_pixels_left_square = np.sum(image_filtered[25:round(dot_y_coordinates[0]-100),
         round(dot_x_coordinates[0]-100):round(dot_x_coordinates[0]+150)], axis=0)
 
         #Only the "y" pixels where there are more than 10 "x" pixels under a grayscale value of 200 are
@@ -329,11 +343,13 @@ with alive_bar(len(JPEG_file_names)) as bar:
 
         y_pixels_left_square = np.where(y_pixels_left_square > 10)[0]
 
-        #The center of the square on the "y" axis may be reached by adding the vertical distance
-        #from the top of the image to the topmost horizontal side of the square ("y_pixels_left_square[0]",
-        #as the slicing used in the "np.num()" operation started from the top of the image) to the half-height
-        #of the square (y_pixels_left_square[-1]-y_pixels_left_square[0])/2).
-        y_center_left_square = round(y_pixels_left_square[0] + (y_pixels_left_square[-1]-y_pixels_left_square[0])/2)
+        #In order to reach the center of the square on the "y" axis, we need to add the amount of pixels needed
+        #to reach the topmost coordinate of the "image_filtered" slicing used in the "np.sum()" operation
+        #(25 px), then add the amount of pixels within that slice to reach the topmost side of the square
+        #(y_pixels_left_square[0]), and finally add the half-height of the square
+        #(y_pixels_left_square[-1]-y_pixels_left_square[0])/2).
+        y_center_left_square = (25 + round(y_pixels_left_square[0] +
+        (y_pixels_left_square[-1]-y_pixels_left_square[0])/2))
 
         x_pixels_left_square = np.where(x_pixels_left_square > 10)[0]
 
@@ -346,15 +362,15 @@ with alive_bar(len(JPEG_file_names)) as bar:
         (x_pixels_left_square[-1]-x_pixels_left_square[0])/2)
 
         #The equivalent code to the one above is used for the gutter margin square on even (left-hand) pages.
-        y_pixels_right_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
+        y_pixels_right_square = np.sum(image_filtered[25:round(dot_y_coordinates[0]-100),
         round(dot_x_coordinates[-1]-150): round(dot_x_coordinates[-1]+100)], axis=1)
-        x_pixels_right_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
+        x_pixels_right_square = np.sum(image_filtered[25:round(dot_y_coordinates[0]-100),
         round(dot_x_coordinates[-1]-150): round(dot_x_coordinates[-1]+100)], axis=0)
 
         y_pixels_right_square = np.where(y_pixels_right_square > 10)[0]
 
-        y_center_right_square = round(y_pixels_right_square[0] +
-        (y_pixels_right_square[-1]-y_pixels_right_square[0])/2)
+        y_center_right_square = (25 + round(y_pixels_right_square[0] +
+        (y_pixels_right_square[-1]-y_pixels_right_square[0])/2))
 
         x_pixels_right_square = np.where(x_pixels_right_square > 10)[0]
 
@@ -405,7 +421,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #Left black square: A blue rectangle is drawn so as to outline the
         #slicing region of the original "image_filtered" for the "np.sum" operation
         cv2.rectangle(text_image_copy, (round(dot_x_coordinates[0]-100),
-        0), (round(dot_x_coordinates[0]+150),
+        25), (round(dot_x_coordinates[0]+150),
         round(dot_y_coordinates[0]-100)), (255,0,0),3)
 
         #Right black square: A red rectangle is drawn so as to outline the
@@ -416,7 +432,7 @@ with alive_bar(len(JPEG_file_names)) as bar:
         #Right black square: A blue rectangle is drawn so as to outline the
         #slicing region of the original "image_filtered" for the "np.sum" operation
         cv2.rectangle(text_image_copy, (round(dot_x_coordinates[-1]-150),
-        0), (round(dot_x_coordinates[-1]+100),
+        25), (round(dot_x_coordinates[-1]+100),
         round(dot_y_coordinates[0]-100)), (255,0,0),3)
 
         #The hypothenuse here is the horizontal dimension between the next character's "x" coordinate and
