@@ -125,11 +125,11 @@ In the image above, the left portion was printed on the front side and is mirror
 ```
 python3 printanotebook.py "title:Notes and Thoughts (Volume 1)" "author:Louis-Philippe Bonhomme-Beaulieu" "number_of_pages:100" "page_numbers" "heading_text_right:Date:                " "scriptreader_acetate:0.13:5:1:2:0.75" "toc_pages_spacing:26"
 ```
-
+<br>
 It is preferable to scan transparencies on a flatbed scanner (at a resolution of 300 dpi and with the US Letter page size setting), in order to avoid scratching and damaging them in a multi-page scanner. This should still save you lots of time when compared to typing all these pages on the computer! When scanning pages on a flatbed scanner, make sure to place the page such that its top left corner is in the top left corner of the scanned image, as shown in the image below.
 
 ![Transparency scanned on a flatbed scanner](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/Scanning%20a%20page%20on%20a%20flatbed%20scanner.jpg)<hr>
-The photo above shows a transparency that was scanned on a flatbed scanner. Notice that the top left corner of the transparency lines up with the top left corner of the scan. It is important that you scan your images like this on the flatbed scanner, so that the character segmentation may proceed smoothly.
+The photo above shows a transparency that was scanned on a flatbed scanner. Notice that the top left corner of the transparency lines up with the top left corner of the scan. It is important that you scan your images like this on the flatbed scanner, so that the character segmentation may proceed smoothly.<br><br>
 
 ![Punching instructions](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/Officemate%20Heavy%20Duty%20Adjustable%202-3%20Hole%20Punch%20with%20Lever%20Handle.png)<hr>
 Once you have printed your notebook, you could punch 3 holes at the standard 2.75 inch spacing of Junior ring binders, using the instructions of the image above, for an Officemate Heavy Duty Adjustable 2-3 Hole Punch with Lever Handle, which could readily punch holes through 10 sheets of 28 lb half letter paper at a time in my experience (while I'm not affiliated with the company that makes that hole punch, I do recommend it).<br><br>
