@@ -15,7 +15,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
 
 <p align="left"> <b>ScriptReader</b> is a tool enabling you to convert scanned handwritten pages (in JPEG image format) into rich text format (RTF) 
   documents, complete with formatting elements such as text alignment, paragraphs, <u>underline</u>, <i>italics</i>, <b>bold</b> and <del>strikethrough</del>. </p>
-<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (square dot grid cells containing mistakes, which are filled in with ink) automatically get filtered out, and do not appear in the final RTF text. Also, the biodegradable fountain pen ink that I have disclosed earlier (see https://www.linkedin.com/feed/update/urn:li:activity:7027469654725947392/) pairs well with the notebooks that you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!<br>
+<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (square dot grid cells containing mistakes, which are filled in with ink) automatically get filtered out, and do not appear in the final RTF text. Also, the biodegradable fountain pen ink that I have disclosed earlier (see https://www.instructables.com/Recipe-for-a-Biodegradable-Blue-Ink-for-Fountain-P/) pairs well with the notebooks that you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!<br>
 
 My tests with over 30,000 characters of training data (about 50 half-letter pages of cursive handwriting on the <b>ScriptReader</b> pages, with 0.13 inch dot spacing and double line spacing) consistently gave me an <b>OCR accuracy above 99%!</b>
 <br> 
