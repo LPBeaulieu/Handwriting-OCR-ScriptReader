@@ -80,7 +80,7 @@ if __name__ == '__main__':
         #give the following extracted name: "Alice's Adventures in Wonderland Chapter 1")
 
         if front_JPEG_file_names not in [None, []]:
-            OCR_text_file_name = re.findall("(.+)_\d+.jpg", front_JPEG_file_names[0])[0]
+            OCR_text_file_name = re.findall("(.+)-[\d]*.jpg", front_JPEG_file_names[0])[0]
 
         #The list "back_JPEG_file_names" is populated with the ".jpg" file names in
         #the "OCR Raw Data" folder.
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         "OCR Raw Data"))) if (file_name[:4].lower()=="back" and file_name[-4:] == ".jpg")])
 
         if back_JPEG_file_names not in [None, []]:
-            OCR_text_file_name = re.findall("(.+)_\d+.jpg", back_JPEG_file_names[0])[0]
+            OCR_text_file_name = re.findall("(.+)-[\d]*.jpg", back_JPEG_file_names[0])[0]
 
         #The folder "OCR Predictions" is created in the working folder, if
         #not already present.
@@ -551,19 +551,18 @@ if __name__ == '__main__':
                     (dot_diameter_pixels + round(0.40*lines_between_text*inches_between_dots*300)))
                     dot_y_coordinates = get_dot_y_coordinates(inches_between_dots, dot_diameter_pixels)
 
-
                 #The image's numpy array is filtered using the np.where() function to convert pixels
-                #lighter than 200 on the grayscale scale to 0 and darker pixels to 1. The rows are added up
+                #lighter than 100 on the grayscale scale to 0 and darker pixels to 1. The rows are added up
                 #(summation along the 1 axis) to determine how many non-white pixels there are for a given
                 #y coordinate. The same is done for the columns, with a summation along the 0 axis.
-                #image_filtered = np.where(text_image_gray>200, 0, 1)
+                #image_filtered = np.where(text_image_gray>100, 0, 1)
                 image_filtered = np.where(text_image_gray>100, 0, 1)
                 y_pixels_left_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
                 round(dot_x_coordinates[0]-100):round(dot_x_coordinates[0]+150)], axis=1)
                 x_pixels_left_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
                 round(dot_x_coordinates[0]-100):round(dot_x_coordinates[0]+150)], axis=0)
 
-                #Only the "y" pixels where there are more than 10 "x" pixels under a grayscale value of 200 are
+                #Only the "y" pixels where there are more than 10 "x" pixels under a grayscale value of 100 are
                 #retained in "y_pixels_left_square". The difference between the index of the first and last "y"
                 #pixels meeting these requirements will give the height of the square:
                 #(y_pixels_left_square[-1]-y_pixels_left_square[0])
