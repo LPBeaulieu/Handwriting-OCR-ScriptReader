@@ -1,26 +1,39 @@
-#***IMPORTANT NOTE!!***
+#***IMPORTANT NOTES!!***
 #You cannot start your actual JPEG file names with "back",
 #as the presence of the "back" prefix in the file name
 #designetes whether the page is even or odd numbered, with the
 #file names for even-numbered pages starting with "back".
 
-from fastai.vision.all import *
-import cv2
-import os
-import shutil
-import re
-import numpy as np
-import sys
-import math
-from textblob import Word
+#The "get_predictions.py" code should be 
+#compiled with "pyinstaller" including 
+#the textblob dictionary files using the 
+#"pyinstaller --onefile --collect-data textblob get_predictions.py"
+#command.
+
 from contextlib import contextmanager
+import cv2
+from fastai.vision.all import *
+import glob
+import math
+import numpy as np
+import os
 import pathlib
 import platform
+import re
+import shutil
+import sys
+from textblob import Word
 import zipfile
 
 
 if __name__ == '__main__':
     cwd = os.getcwd()
+
+    #The "clear_screen()" function will clear the CLI screen 
+    #using the appropriate command depending on the operating system.
+    def clear_screen():
+        #'nt' is for Windows, 'posix' is for Linux/MacOS (else statement)
+        os.system('cls' if os.name == 'nt' else 'clear')
 
     #Import the convoluted neural network (cnn) deep learning model for OCR prediction.
     #My optimal model trained on 26 pages of typewritten text using a 1968 Olivetti Underwood Lettra 33 typewriter,
@@ -56,15 +69,24 @@ if __name__ == '__main__':
             model_name = find_model_name(model_names)
             if model_name != None:
                 learn = load_learner(model_name)
+            #The "clear_screen()" function will clear the CLI screen 
+            #using the appropriate command depending on the operating system.
+            clear_screen()
         finally:
             pathlib.PosixPath = posix_backup
     else:
-        model_names = ([file_name for file_name in sorted(os.listdir(cwd)) if
-        zipfile.is_zipfile(file_name) and os.path.splitext(file_name)[-1] == ""])
-        model_name = find_model_name(model_names)
-        if model_name != None:
-            learn = load_learner(model_name)
-
+        try:
+            model_names = ([file_name for file_name in sorted(os.listdir(cwd)) if
+            zipfile.is_zipfile(file_name) and os.path.splitext(file_name)[-1] == ""])
+            model_name = find_model_name(model_names)
+            if model_name != None:
+                learn = load_learner(model_name)
+            #The "clear_screen()" function will clear the CLI screen 
+            #using the appropriate command depending on the operating system.
+            clear_screen()
+        except:
+            pass
+            
     if model_name != None:
         #The list "JPEG_file_names" is populated with the ".jpg" file names in
         #the "OCR Raw Data" folder.
@@ -80,7 +102,7 @@ if __name__ == '__main__':
         #give the following extracted name: "Alice's Adventures in Wonderland Chapter 1")
 
         if front_JPEG_file_names not in [None, []]:
-            OCR_text_file_name = re.findall("(.+)-[\d]*.jpg", front_JPEG_file_names[0])[0]
+            OCR_text_file_name = re.findall(r"(.+)-[\d]*.jpg", front_JPEG_file_names[0])[0]
 
         #The list "back_JPEG_file_names" is populated with the ".jpg" file names in
         #the "OCR Raw Data" folder.
@@ -88,7 +110,7 @@ if __name__ == '__main__':
         "OCR Raw Data"))) if (file_name[:4].lower()=="back" and file_name[-4:] == ".jpg")])
 
         if back_JPEG_file_names not in [None, []]:
-            OCR_text_file_name = re.findall("(.+)-[\d]*.jpg", back_JPEG_file_names[0])[0]
+            OCR_text_file_name = re.findall(r"(.+)-[\d]*.jpg", back_JPEG_file_names[0])[0]
 
         #The folder "OCR Predictions" is created in the working folder, if
         #not already present.
@@ -101,10 +123,18 @@ if __name__ == '__main__':
         JPEG_file_names = []
         if (front_JPEG_file_names not in [None, []] and back_JPEG_file_names not in [None, []] and
         len(front_JPEG_file_names) >= len(back_JPEG_file_names)):
+            #The counter "back_page_index", initialized to -1 for 
+            #the last index of "back_JPEG_file_names", will be 
+            #decremented with each iteration of the "for" loop,
+            #as the stack of pages was flipped when scanning the 
+            #"back" pages, so the flip side of the first page is 
+            #actually at the bottom of the stack of "back" pages.
+            back_page_index = -1
             for i in range(len(front_JPEG_file_names)):
                 JPEG_file_names.append(front_JPEG_file_names[i])
                 try:
-                    JPEG_file_names.append(back_JPEG_file_names[i])
+                    JPEG_file_names.append(back_JPEG_file_names[back_page_index])
+                    back_page_index -= 1
                 except IndexError:
                     pass
         elif (front_JPEG_file_names not in [None, []] and back_JPEG_file_names not in [None, []] and
@@ -114,22 +144,15 @@ if __name__ == '__main__':
                     JPEG_file_names.append(front_JPEG_file_names[i])
                 except IndexError:
                     pass
-                JPEG_file_names.append(back_JPEG_file_names[i])
-
+                JPEG_file_names.append(back_JPEG_file_names[back_page_index])
+                back_page_index -= 1
         elif front_JPEG_file_names not in [None, []] and back_JPEG_file_names in [None, []]:
             for i in range(len(front_JPEG_file_names)):
                 JPEG_file_names.append(front_JPEG_file_names[i])
-
+        #As only back side pages will be scanned, we can proceed in increasing page order.
         elif front_JPEG_file_names in [None, []] and back_JPEG_file_names not in [None, []]:
             for i in range(len(back_JPEG_file_names)):
                 JPEG_file_names.append(back_JPEG_file_names[i])
-
-
-
-        print("\nCurrently processing a total of " + str(len(JPEG_file_names)) +
-        ' JPEG scanned images of handwritten text. ' +
-        'For best results, these should be scanned as JPEG images on a ' +
-        'multipage scanner at a resolution of 300 dpi with US Letter paper size setting.\n')
 
         #The number of inches (generated with PrintANotebook)
         #in-between every dot will allow the code to determine
@@ -140,20 +163,25 @@ if __name__ == '__main__':
         x_overlap = None
         y_overlap = None
         #The "top_margin_y_pixel" maps to the "y" pixel
-        #where the lines or dots start being drawin on
+        #where the lines or dots start being drawn on
         #the pages.
         top_margin_y_pixel = 0.95*300
         #Similarly, the "bottom_margin_y_pixel" maps to
         #the "y" pixel where the lines and dots end.
         bottom_margin_y_pixel = 2550-(0.60*300)
+        user_provided_bottom_margin_y_pixel = False
         #The variables "left_margin_x_pixel"  and
         #"right_margin_x_pixel" map to the "x"
         #pixels where the lines and dots start and
         #stop being drawn on the pages, respectively.
-        left_margin_x_pixel = 0.25*300
+        #An extra pixel is added to the "left_margin_x_pixel"
+        #and subtracted from "right_margin_x_pixel" in order
+        #to allow for a full 0.25 inch margin.
+        left_margin_x_pixel = 0.25*300 + 1
         #The right margin is different from PrintANotebook,
         #as only a half letter page is scanned at a time.
-        right_margin_x_pixel = 3300/2-(0.25*300)
+        right_margin_x_pixel = 3300/2 - (0.25*300) - 1
+        user_provided_right_margin = False
         #The "gutter_margin_width_pixels" designates the
         #width (in pixels) of the gutter margins of the
         #notebook. They are set to the pixel equivalent
@@ -161,11 +189,21 @@ if __name__ == '__main__':
         #when opening a bound book.
         gutter_margin_width_pixels = 0.75*300
         #The user needs to provide the "x,y" coordinates of the
-        #to upper corner dots of the first page on the stack of
+        #two upper corner dots of the first page on the stack of
         #scanned pages, so that the code could know where to
         #perform character segmentation.
         top_left_dot = None
         top_right_dot = None
+        #The variable "pixels_above_black_squares" stores the number
+        #of pixels above the black squares on the ScriptReader pages.
+        pixels_above_black_squares = 0.25*300
+        #The notebooks can be printed in A4 format
+        #The user then needs to pass in the "A4" argument
+        #when running the code, before specifying any margins
+        #on the notebook pages, so that the code could apply
+        #the right margin settings to the A4 pages.
+        A4 = False
+
         #If the user has selected the "basic_autocorrect" option, then the code
         #will screen the misspelled words in the page (words that aren't found
         #within "english_dict") to see if any of them could be corrected by
@@ -198,6 +236,12 @@ if __name__ == '__main__':
         #probability after the "autocorrect:" argument.
         autocorrect = False
         autocorrect_confidence = 1
+        #If the user has passed in the argument "autocorrect_case"
+        #when running the code, then any word containing lower cased letters
+        #or backslashes indicative of RTF commands will be lowercased, as there
+        #could have been OCR errors that introduced uppercase letters in a word,
+        #and these are much rarer than lowercase letters in most cases.
+        autocorrect_case = False
         #If there is at least one instance of a non-directional single "'" or
         #double '"' quote in the "text" string, or if the user has selected the
         #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
@@ -213,7 +257,14 @@ if __name__ == '__main__':
         #be applied to the page.
         smart_quotes = False
         symmetrical_quotes = False
-
+        
+        exception_string = ('\nPlease provide the dot spacing in inches (in decimal form and without units) after ' +
+            'the "dot_spacing:" argument, or in centimeters after the "dot_spacing_cm:" argument, ' + 
+            'along with the number of empty lines in-between lines of text, preceded by "lines_between_text:" ' +
+            'Alternatively, simply copy and paste the arguments passed in when generating the notebook ' +
+            '(excluding the Python call), which can be found in text file entitled "Parameters Passed In.txt", ' + 
+            'within the "Notebooks" subfolder of your PrintANotebook working folder.\nFor example: "dot_spacing: 0.13" ' +
+            '"lines_between_text:2"')
 
         if len(sys.argv) > 1:
             #The "try/except" statement will
@@ -223,41 +274,85 @@ if __name__ == '__main__':
             #directly after the colon separating
             #the variable name from the value.
             try:
-                for j in range(1, len(sys.argv)):
-                    if sys.argv[j][:13] == "top_left_dot:":
-                        top_left_dot = True
-                        top_left_dot_x = int(sys.argv[j][13:].split(",")[0])
-                        top_left_dot_y = int(sys.argv[j][13:].split(",")[1])
-                    elif sys.argv[j][:14] == "top_right_dot:":
-                        top_right_dot = True
-                        top_right_dot_x = int(sys.argv[j][14:].split(",")[0])
-                        top_right_dot_y = int(sys.argv[j][14:].split(",")[1])
-                    elif sys.argv[j][:12] == "dot_spacing:":
-                        inches_between_dots = float(sys.argv[j][12:].strip())
-                    elif sys.argv[j][:20] == "dot_diameter_pixels:":
-                        dot_diameter_pixels = int(sys.argv[j][20:].strip())
-                    elif sys.argv[j][:15] == "dot_line_width:":
-                        dot_line_width = int(sys.argv[j][15:].strip())
-                    elif sys.argv[j][:10] == "x_overlap:":
-                        x_overlap = int(sys.argv[j][10:].strip())
-                    elif sys.argv[j][:10] == "y_overlap:":
-                        y_overlap = int(sys.argv[j][10:].strip())
-                    elif sys.argv[j].lower()[:11] == "top_margin:":
-                        inches = float(sys.argv[j][11:].strip())
+                for i in range(1, len(sys.argv)):
+                    sys_argv_i_lower_strip = sys.argv[i].lower().strip()
+                    if sys_argv_i_lower_strip[:15] == "dot_spacing_mm:":
+                        mm = float(sys_argv_i_lower_strip[15:].strip())
+                        inches_between_dots = mm/25.4
+                    elif sys_argv_i_lower_strip[:12] == "dot_spacing:":
+                        inches_between_dots = float(sys_argv_i_lower_strip[12:].strip())
+                    elif sys_argv_i_lower_strip[:20] == "dot_diameter_pixels:":
+                        dot_diameter_pixels = int(sys_argv_i_lower_strip[20:].strip())
+                    elif sys_argv_i_lower_strip[:15] == "dot_line_width:":
+                        dot_line_width = int(sys_argv_i_lower_strip[15:].strip())
+                    elif sys_argv_i_lower_strip[:10] == "x_overlap:":
+                        x_overlap = int(sys_argv_i_lower_strip[10:].strip())
+                    elif sys_argv_i_lower_strip[:10] == "y_overlap:":
+                        y_overlap = int(sys_argv_i_lower_strip[10:].strip())            
+                    elif sys_argv_i_lower_strip[:12] == "left_margin:":
+                        inches = float(sys_argv_i_lower_strip[12:].strip())
+                        #An extra pixel is added in order to allow for
+                        #a full "inches" margin and to start drawing 
+                        #one pixel after that.
+                        left_margin_x_pixel = round(inches*300) + 1
+                        user_provided_left_margin = True
+                    elif sys_argv_i_lower_strip[:15] == "left_margin_cm:":
+                        cm = float(sys_argv_i_lower_strip[15:].strip())
+                        inches = cm/2.54
+                        left_margin_x_pixel = round(inches*300) + 1
+                        user_provided_left_margin = True
+                    elif sys_argv_i_lower_strip[:13] == "right_margin:":
+                        inches = float(sys_argv_i_lower_strip[13:].strip())
+                        if A4:
+                            #An extra pixel is subtracted in order to
+                            #allow for a full "inches" margin and to
+                            #start drawing one pixel before that.
+                            right_margin_x_pixel = 3508-round(inches*300)-1
+                        else:
+                            right_margin_x_pixel = 3300-round(inches*300)-1
+                        user_provided_right_margin = True
+                    elif sys_argv_i_lower_strip[:16] == "right_margin_cm:":
+                        cm = float(sys_argv_i_lower_strip[16:].strip())
+                        inches = cm/2.54
+                        if A4:
+                            right_margin_x_pixel = 3508-round(inches*300)-1
+                        else:
+                            right_margin_x_pixel = 3300-round(inches*300)-1
+                        user_provided_right_margin = True
+                    elif sys_argv_i_lower_strip[:11] == "top_margin:":
+                        inches = float(sys_argv_i_lower_strip[11:].strip())
                         top_margin_y_pixel = round(inches*300)
-                    elif sys.argv[j].lower()[:14] == "bottom_margin:":
-                        inches = float(sys.argv[j][14:].strip())
-                        bottom_margin_y_pixel = 2550-round(inches*300)
-                    elif sys.argv[j].lower()[:12] == "left_margin:":
-                        inches = float(sys.argv[i][12:].strip())
-                        left_margin_x_pixel = round(inches*300)
-                    elif sys.argv[j].lower()[:13] == "right_margin:":
-                        inches = float(sys.argv[i][13:].strip())
-                    elif sys.argv[j].lower()[:14] == "gutter_margin:":
-                        gutter_margin_width_pixels = round(float(sys.argv[i].lower()[14:].strip())*300)
-                    elif sys.argv[j].lower()[:19] == "lines_between_text:":
-                        lines_between_text = int(sys.argv[j].lower()[19:].strip())
-                    elif sys.argv[j].lower().split(":")[0] in ["scriptreader", "scriptreader_left", "scriptreader_right", "scriptreader_acetate"]:
+                    elif sys_argv_i_lower_strip[:14] == "top_margin_cm:":
+                        cm = float(sys_argv_i_lower_strip[14:].strip())
+                        inches = cm/2.54
+                        top_margin_y_pixel = round(inches*300)
+                    elif sys_argv_i_lower_strip[:14] == "bottom_margin:":
+                        inches = float(sys_argv_i_lower_strip[14:].strip())
+                        if A4:
+                            bottom_margin_y_pixel = 2480-round(inches*300)
+                        else:
+                            bottom_margin_y_pixel = 2550-round(inches*300)
+                        user_provided_bottom_margin_y_pixel = True
+                    elif sys_argv_i_lower_strip[:17] == "bottom_margin_cm:":
+                        cm = float(sys_argv_i_lower_strip[17:].strip())
+                        inches = cm/2.54
+                        if A4:
+                            bottom_margin_y_pixel = 2480-round(inches*300)
+                        else:
+                            bottom_margin_y_pixel = 2550-round(inches*300)
+                        user_provided_bottom_margin_y_pixel = True
+                    elif sys_argv_i_lower_strip[:14] == "gutter_margin:":
+                        inches = float(sys_argv_i_lower_strip[14:].strip())
+                        gutter_margin_width_pixels = round(inches*300)
+                        user_provided_gutter_margin = True
+                    elif sys_argv_i_lower_strip[:17] == "gutter_margin_cm:":
+                        cm = float(sys_argv_i_lower_strip[17:].strip())
+                        inches = cm/2.54
+                        gutter_margin_width_pixels = round(inches*300)
+                        user_provided_gutter_margin = True
+                    elif sys_argv_i_lower_strip[:19] == "lines_between_text:":
+                        lines_between_text = int(sys_argv_i_lower_strip[19:].strip())
+                    elif sys_argv_i_lower_strip.split(":")[0] in ["scriptreader_mm", "scriptreader_left_mm", "scriptreader_right_mm", "scriptreader_acetate_mm"]:
                         #If the user has selected to print some custom
                         #dot grid pages for use in the handwriting OCR
                         #application ScriptReader, they will likely want
@@ -266,52 +361,66 @@ if __name__ == '__main__':
                         #which may be overriden if the user has specified
                         #a different gutter margin as the fifth argument.
                         gutter_margin_width_pixels = 0.75*300
-                        arguments = sys.argv[j].lower().split(":")[1:]
+                        arguments = sys_argv_i_lower_strip.split(":")[1:]
                         if arguments != [""]:
-                            for k in range(len(arguments)):
-                                if k == 0:
-                                    inches_between_dots = float(arguments[k])
-                                elif k == 1:
-                                    dot_diameter_pixels = int(arguments[k])
-                                elif k == 2:
-                                    dot_line_width = int(arguments[k])
-                                elif k == 3:
-                                    lines_between_text = int(arguments[k])
-                                elif k == 4:
-                                    gutter_margin_width_pixels = round(float(arguments[k])*300)
-                    elif sys.argv[j].lower()[:23] == "basic_autocorrect_lower":
+                            for j in range(len(arguments)):
+                                if j == 0:
+                                    mm = float(arguments[j])
+                                    inches_between_dots = mm/25.4
+                                elif j == 1:
+                                    dot_diameter_pixels = int(arguments[j])
+                                elif j == 2:
+                                    dot_line_width = int(arguments[j])
+                                elif j == 3:
+                                    lines_between_text = int(arguments[j])
+                                elif j == 4:
+                                    gutter_margin_width_pixels = round(float(arguments[j])*300)
+                    elif sys_argv_i_lower_strip.split(":")[0] in ["scriptreader", "scriptreader_left", "scriptreader_right", "scriptreader_acetate"]:
+                        gutter_margin_width_pixels = 0.75*300
+                        arguments = sys_argv_i_lower_strip.split(":")[1:]
+                        if arguments != [""]:
+                            for j in range(len(arguments)):
+                                if j == 0:
+                                    inches_between_dots = float(arguments[j])
+                                elif j == 1:
+                                    dot_diameter_pixels = int(arguments[j])
+                                elif j == 2:
+                                    dot_line_width = int(arguments[j])
+                                elif j == 3:
+                                    lines_between_text = int(arguments[j])
+                                elif j == 4:
+                                    gutter_margin_width_pixels = round(float(arguments[j])*300)
+                    elif sys_argv_i_lower_strip[:2] == "a4":
+                        A4 = True
+                    #If the user has passed in the argument "autocorrect_case"
+                    #when running the code, then any word containing lower cased letters
+                    #or backslashes indicative of RTF commands will be lowercased, as there
+                    #could have been OCR errors that introduced uppercase letters in a word,
+                    #and these are much rarer than lowercase letters in most cases.
+                    elif sys.argv[i].lower()[:16] == "autocorrect_case":
+                        autocorrect_case = True
+                    elif sys.argv[i].lower()[:23] == "basic_autocorrect_lower":
                         basic_autocorrect_lower = True
-                    elif sys.argv[j].lower()[:17] == "basic_autocorrect":
+                    elif sys.argv[i].lower()[:17] == "basic_autocorrect":
                         basic_autocorrect = True
-                    elif sys.argv[j].lower()[:11] == "autocorrect":
+                    elif sys.argv[i].lower()[:11] == "autocorrect":
                         autocorrect = True
                         try:
-                            autocorrect_confidence = float(sys.argv[j][12:].strip())
+                            autocorrect_confidence = float(sys.argv[i][12:].strip())
                         except:
                             pass
-                    elif sys.argv[j] == "smart_quotes":
+                    elif sys.argv[i].lower()[:12] == "smart_quotes":
                         smart_quotes = True
-                    elif sys.argv[j] == "symmetrical_quotes":
+                    elif sys.argv[i].lower()[:18] == "symmetrical_quotes":
                         symmetrical_quotes = True
 
             except Exception as e:
                 print(e)
-                print('\nPlease provide the dot spacing in inches (in decimal form and without units) after ' +
-                'the "dot_spacing:" argument, along with the number of empty lines in-between lines of text, ' +
-                'preceded by "lines_between_text:" Alternatively, simply copy and paste the arguments passed' +
-                'in when generating the notebook (excluding the Python call), which can be found in text file ' +
-                'entitled "Parameters Passed In.txt", within the "Notebooks" subfolder of your PrintANotebook ' +
-                'working folder.')
-                print('For example: "dot_spacing: 0.125" "lines_between_text:2"')
+                print("")
+                sys.exit(exception_string)
 
         else:
-            print('\nPlease provide the dot spacing in inches (in decimal form and without units) after ' +
-            'the "dot_spacing:" argument, along with the number of empty lines in-between lines of text, ' +
-            'preceded by "lines_between_text:" Alternatively, simply copy and paste the arguments passed' +
-            'in when generating the notebook (excluding the Python call), which can be found in text file ' +
-            'entitled "Parameters Passed In.txt", within the "Notebooks" subfolder of your PrintANotebook ' +
-            'working folder.')
-            print('For example: "dot_spacing: 0.125" "lines_between_text:2"')
+            sys.exit(exception_string)
 
         #The number of pixels in-between two dots (assuming that the dot grid pages
         #were printed without image resizing) is given using the ratio of 2550 pixels
@@ -329,11 +438,42 @@ if __name__ == '__main__':
         if y_overlap == None:
             y_overlap = round(0.75*lines_between_text*pixels_between_dots)
 
+        if A4:
+            #The width of an A4 page corresponds to: round(210 mm/25.4 mm/inch * 300 pixels/inch) = 2480 px
+            paper_width = 2480
+            #The length of the book cover using A4 paper corresponds to:
+            #round(297 mm/25.4 mm/inch * 300 pixels/inch) = 3508 px
+            paper_height = 3508
+            #The "bottom_margin_y_pixel" maps to
+            #the "y" pixel where dots end.
+            #If the user didn't specify a value for this
+            #variable, it needs to be adjusted to the width of an
+            #A4 page (2480 px - 0.60 inch*300 px/inch = 2300 px).
+            if user_provided_bottom_margin_y_pixel == False:
+                bottom_margin_y_pixel = 2300
+            if user_provided_right_margin == False:
+                #The right margin is different from PrintANotebook,
+                #as only a half letter page is scanned at a time.
+                #The variable "right_margin_x_pixel" maps to 
+                #the "x" pixel where the dots start 
+                #being drawn on right-hand pages. If the user didn't 
+                #specify a value for this variable, it needs 
+                #to be adjusted to the length of an A4 page 
+                #(3508 px/2 - 0.25 inch*300 px/inch - 1 px = 1678 px)
+                #One extra pixel is subtracted to allow a full 75 px
+                #margin and to start drawing 1 pixel before that.
+                right_margin_x_pixel = 1678
+        else:
+            #The width of a US Letter page corresponds to 8.5 inch * 300 pixels/inch = 2550 px
+            paper_width = 2550
+            #The length of the book cover using US Letter paper corresponds to:
+            #11 inch * 300 pixels/inch = 3300 px
+            paper_height = 3300
+
         #The "character_index" will keep track of the index of every
         #character in each of the pages of the dataset, so that every
         #character of a given category has a different file name.
         character_index = 0
-
 
         if basic_autocorrect == True or basic_autocorrect_lower == True:
             #The 143K word list ("wlist_match7.txt") was found at the following link
@@ -367,7 +507,6 @@ if __name__ == '__main__':
                         abridged_dict_path = file
                     else:
                         dict_path = file
-                        print("dict_path: ", dict_path)
             else:
                 print("\nPlease include a text file (.txt) containing " +
                 'the comprehensive list of words that you wish to use in the "Dictionary" subfolder ' +
@@ -408,13 +547,137 @@ if __name__ == '__main__':
 
         with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+', encoding="utf-8") as f:
             f.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
+            
+            #The "get_dot_x_coordinates(inches_between_dots, dot_diameter_pixels)"
+            #function populates the "dot_x_coordinates" list with the same row "x"
+            #coordinates, distance in-between dots ("inches_between_dots") as well as
+            #left and gutter margins, ("left_margin_x_pixel" and "gutter_margin_width_pixels",
+            #respectively) that were used to generate the actual dot grid notebook pages.
+            def get_dot_x_coordinates(inches_between_dots, dot_diameter_pixels):
+                #**IMPORTANT!!** You cannot start your actual JPEG file names
+                #with "back", as the presence of the "back" prefix in the file name
+                #designetes whether the page is even or odd numbered, with the
+                #file names for even-numbered pages starting with "back".
+
+                #In a multi-page scanner, a half-letter page scanned in portrait mode
+                #will end up being centered on the image, with an image height of the pixel
+                #equivalent of 8 1/2 inches (2550 px at 300 dpi) and an image width of around
+                #2550 px as well, as the maximal width of the multi-page scanner page feeder
+                #is a little over 8 1/2 inches. This means that the height/width aspect ratio
+                #for images scanned on a multi-page scanner will be around 1.00, while those
+                #scanned on a flatbed scanner will be around 11/8.5 = 1.29.
+                if imgheight/imgwidth < 1.2:
+                    #For pages scanned on a multi-page scanner, the pixel at which the
+                    #actual page scan begins is dermined by taking dividing the difference
+                    #between the image width and 1650, which is the number of pixels for
+                    #the page width of 5.5 inches at 300 ppi resolution, by two
+                    #("paper_height/2" is used so that the code is compatible with A4 format).
+                    image_border_to_start_of_page_x_pixels = round(imgwidth-paper_height/2)/2
+                else:
+                    #For pages scanned on the flatbed scanner, and of which the top left
+                    #corner of the scanned page lines up with the top-left corner of the image,
+                    #the value of "image_border_to_start_of_page_x_pixels" is set to zero, as
+                    #the page is lined up with the left edge of the image.
+                    image_border_to_start_of_page_x_pixels = 0
+                #If the page is even-numbered (the file name is starts with "back"
+                #for "back page"), then the "starting_x" pixel is initialized to
+                #"left_margin_x_pixel".
+                if JPEG_file_names[i][:4].lower() == "back":
+                    #Here half of the diameter of the dots ("round(dot_diameter_pixels/2)")
+                    #is added to "left_margin_x_pixel" to ensure that the left edge of the 
+                    #leftmost dots is within the border (otherwise half of the dot would
+                    #be outside of the border horizontally)
+                    starting_x = left_margin_x_pixel + round(dot_diameter_pixels/2) + image_border_to_start_of_page_x_pixels
+                    pixel_increment =  pixels_between_dots
+                    dot_x_coordinates = []
+                    #while "starting_x" is within range of the gutter margin
+                    #pixel on the page (imgwidth-image_border_to_start_of_page_x_pixels)
+                    #-gutter_margin_width_pixels), it will be added to the list
+                    #"dot_x_coordinates" and the "starting_x" will be incremented
+                    #by the number of pixels in-between dots.
+                    while starting_x <= (imgwidth-image_border_to_start_of_page_x_pixels)-gutter_margin_width_pixels:
+                        dot_x_coordinates.append(starting_x)
+                        starting_x += pixel_increment
+                    return dot_x_coordinates
+                #If the page is odd-numbered (right hand page, so the front side),
+                #the file name doesn't start with "back". The "starting_x" pixel
+                #is initialized as "right_margin_x_pixel". Mirroring the above "if"
+                #statement, while the "starting_x" (initialized to the "x" pixel
+                #of the right margin) is over the gutter margin (now on the left
+                #side of the page), it is included in the "dot_x_coordinates" list.
+                #the sorted list is returned, as the dots are added to the list
+                #from the right to the left side of the page.
+                else:
+                    #Here half of the diameter of the dots ("round(dot_diameter_pixels/2)")
+                    #is subtracted from "right_margin_x_pixel" to ensure that the right edge of the 
+                    #rightmost dots is within the border (otherwise half of the dot would
+                    #be outside of the border horizontally)
+                    starting_x = right_margin_x_pixel - round(dot_diameter_pixels/2) + image_border_to_start_of_page_x_pixels
+                    pixel_increment =  pixels_between_dots
+                    dot_x_coordinates = []
+                    while starting_x >= image_border_to_start_of_page_x_pixels + gutter_margin_width_pixels:
+                        dot_x_coordinates.append(starting_x)
+                        starting_x -= pixel_increment
+                    return sorted(dot_x_coordinates)
+
+            #The "get_dot_y_coordinates(inches_between_dots, dot_diameter_pixels)"
+            #function populates the "dot_y_coordinates" list with the same line "y"
+            #coordinates, distance in-between dots ("inches_between_dots") as well as
+            #top and bottom margins ("image_top_margin_y_pixel" and "image_bottom_margin_y_pixel",
+            #respectively) that were used to generate the actual dot grid notebook pages.
+            #Starting from the top margin, "y" coordinates will be added to the "dot_y_coordinates"
+            #list in increments of the pixel distance in-between dots ("pixels_between_dots").
+            def get_dot_y_coordinates(inches_between_dots, dot_diameter_pixels):
+                starting_y = image_top_margin_y_pixel
+                pixel_increment = pixels_between_dots
+                dot_y_coordinates = []
+                while starting_y <= image_bottom_margin_y_pixel:
+                    dot_y_coordinates.append(starting_y)
+                    starting_y += pixel_increment
+                return dot_y_coordinates
+
+            #The hypothenuse here is the horizontal dimension between the next character's "x" coordinate and
+            #the starting "x" on the text line, in the untilted dot grid. So the next "x" coordinate is determined
+            #by multiplying that pixel count by the cosine of the slope angle, and then adding the current "x"
+            #coordinate, to allow the segmentation to walk forward on the line.
+            def get_next_x(k):
+                next_x = round(current_x + (dot_x_coordinates[k+1]-dot_x_coordinates[0])*np.cos(slope_angle) -
+                (dot_x_coordinates[k]-dot_x_coordinates[0])*np.cos(slope_angle))
+                return next_x
+
+            #The hypothenuse here is the horizontal dimension between the next character's "x" coordinate and
+            #the starting "x" on the text line, in the untilted dot grid. So the next "y" coordinate is determined
+            #by multiplying that pixel count by the sine of the slope angle, and then adding the "y" coordinate
+            #of the starting top dot of that text line.
+            def get_next_y(k):
+                next_y = round(next_line_y + ((dot_x_coordinates[k+1]-dot_x_coordinates[0])*np.sin(slope_angle)))
+                return next_y
+            
             #This code obtains the individual character coordinates from the image files
             #listed in the "JPEG_file_names" list and generates JPEG images with overlaid
             #character rectangles, named after the original files, but with the added
             #"with character rectangles" suffix.
-
-            for i in range(len(JPEG_file_names)):
-                print(f'\nCurrently processing image entitled: "{JPEG_file_names[i]}"\n')
+        
+            #This code obtains the individual character coordinates from the image files
+            #listed in the "JPEG_file_names" list and generates JPEG images with overlaid
+            #character rectangles, named after the original files, but with the added
+            #"with character rectangles" suffix.
+            
+            text = []
+            len_JPEG_file_names = len(JPEG_file_names)
+            for i in range(len_JPEG_file_names):
+                #The "clear_screen()" function will clear the CLI screen 
+                #using the appropriate command depending on the operating system.
+                clear_screen()
+                
+                print("\nCurrently processing a total of " + str(len(JPEG_file_names)) +
+                ' JPEG scanned images of handwritten text. ' +
+                'For best results, these should be scanned as JPEG images on a ' +
+                'multipage scanner at a resolution of 300 dpi.\n')
+                
+                print("\nCurrently processing JPEG file:", JPEG_file_names[i])
+                print(f"\nProgress: {i+1}/{len_JPEG_file_names} ({round((i+1)/len_JPEG_file_names*100, 1)}%)\n")
+                
                 #The "image_top_margin_y_pixel" and
                 #"image_bottom_margin_y_pixel" variables
                 #are initialized as the starting values
@@ -440,71 +703,6 @@ if __name__ == '__main__':
                 #and get OCR predictions. This way, the user could use different colored
                 #pens and the model should still work nicely).
                 text_image_gray = cv2.cvtColor(text_image, cv2.COLOR_BGR2GRAY)
-
-                #The "get_dot_x_coordinates(inches_between_dots, dot_diameter_pixels)"
-                #function populates the "dot_x_coordinates" list with the same row "x"
-                #coordinates, distance in-between dots ("inches_between_dots") as well as
-                #left and  gutter margins, ("left_margin_x_pixel" and "gutter_margin_width_pixels",
-                #respectively) that were used to generate the actual dot grid notebook pages.
-                def get_dot_x_coordinates(inches_between_dots, dot_diameter_pixels):
-                    #**IMPORTANT!!** You cannot start your actual JPEG file names
-                    #with "back", as the presence of the "back" prefix in the file name
-                    #designetes whether the page is even or odd numbered, with the
-                    #file names for even-numbered pages starting with "back".
-
-                    #The pixel at which the actual page scan begins is dermined by
-                    #taking dividing the difference between the image width and
-                    #1650, which is the number of pixels for the page width of 5.5
-                    #inches at 300 ppi resolution, by two.
-                    image_border_to_start_of_page_x_pixels = round(imgwidth-1650)/2
-                    #If the page is even-numbered (the file name is starts with "back"
-                    #for "back page"), then the "starting_x" pixel is initialized to
-                    #"left_margin_x_pixel".
-                    if JPEG_file_names[i][:4].lower() == "back":
-                        starting_x = left_margin_x_pixel + image_border_to_start_of_page_x_pixels
-                        pixel_increment =  pixels_between_dots
-                        dot_x_coordinates = []
-                        #while "starting_x" is within range of the gutter margin
-                        #pixel on the page (imgwidth-image_border_to_start_of_page_x_pixels)
-                        #-gutter_margin_width_pixels), it will be added to the list
-                        #"dot_x_coordinates" and the "starting_x" will be incremented
-                        #by the number of pixels in-between dots.
-                        while starting_x <= (imgwidth-image_border_to_start_of_page_x_pixels)-gutter_margin_width_pixels:
-                            dot_x_coordinates.append(starting_x)
-                            starting_x += pixel_increment
-                        return dot_x_coordinates
-                    #If the page is odd-numbered (right hand page, so the front side),
-                    #the file name doesn't start with "back". The "starting_x" pixel
-                    #is initialized as "right_margin_x_pixel". Mirroring the above "if"
-                    #statement, while the "starting_x" (initialized to the "x" pixel
-                    #of the right margin) is over the gutter margin (now on the left
-                    #side of the page), it is included in the "dot_x_coordinates" list.
-                    #the sorted list is returned, as the dots are added to the list
-                    #from the right to the left side of the page.
-                    else:
-                        starting_x = right_margin_x_pixel + image_border_to_start_of_page_x_pixels
-                        pixel_increment =  pixels_between_dots
-                        dot_x_coordinates = []
-                        while starting_x >= image_border_to_start_of_page_x_pixels + gutter_margin_width_pixels:
-                            dot_x_coordinates.append(starting_x)
-                            starting_x -= pixel_increment
-                        return sorted(dot_x_coordinates)
-
-                #The "get_dot_y_coordinates(inches_between_dots, dot_diameter_pixels)"
-                #function populates the "dot_y_coordinates" list with the same line "y"
-                #coordinates, distance in-between dots ("inches_between_dots") as well as
-                #top and bottom margins ("image_top_margin_y_pixel" and "image_bottom_margin_y_pixel",
-                #respectively) that were used to generate the actual dot grid notebook pages.
-                #Starting from the top margin, "y" coordinates will be added to the "dot_y_coordinates"
-                #list in increments of the pixel distance in-between dots ("pixels_between_dots").
-                def get_dot_y_coordinates(inches_between_dots, dot_diameter_pixels):
-                    starting_y = image_top_margin_y_pixel
-                    pixel_increment = pixels_between_dots
-                    dot_y_coordinates = []
-                    while starting_y <= image_bottom_margin_y_pixel:
-                        dot_y_coordinates.append(starting_y)
-                        starting_y += pixel_increment
-                    return dot_y_coordinates
 
                 #The row "x" and line "y" coordinates of the dot grid are gathered
                 #by calling the "get_dot_x_coordinates" and "get_dot_y_coordinates",
@@ -555,25 +753,29 @@ if __name__ == '__main__':
                 #lighter than 100 on the grayscale scale to 0 and darker pixels to 1. The rows are added up
                 #(summation along the 1 axis) to determine how many non-white pixels there are for a given
                 #y coordinate. The same is done for the columns, with a summation along the 0 axis.
-                #image_filtered = np.where(text_image_gray>100, 0, 1)
+                #The first 25 vertical pixels of the image are skipped over in order to avoid shadows along
+                #the top edge of the page. The "max()" and "min()" methods are used to make sure that the
+                #bounds are within the image.
                 image_filtered = np.where(text_image_gray>100, 0, 1)
-                y_pixels_left_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
-                round(dot_x_coordinates[0]-100):round(dot_x_coordinates[0]+150)], axis=1)
-                x_pixels_left_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
-                round(dot_x_coordinates[0]-100):round(dot_x_coordinates[0]+150)], axis=0)
+                y_pixels_left_square = np.sum(image_filtered[25:max(0, round(dot_y_coordinates[0]-100)),
+                max(0, round(dot_x_coordinates[0]-100)):min(imgwidth, round(dot_x_coordinates[0]+150))], axis=1)
+                x_pixels_left_square = np.sum(image_filtered[25:max(0, round(dot_y_coordinates[0]-100)),
+                max(0, round(dot_x_coordinates[0]-100)):min(imgwidth, round(dot_x_coordinates[0]+150))], axis=0)
 
-                #Only the "y" pixels where there are more than 10 "x" pixels under a grayscale value of 100 are
+                #Only the "y" pixels where there are more than 10 "x" pixels under a grayscale value of 200 are
                 #retained in "y_pixels_left_square". The difference between the index of the first and last "y"
                 #pixels meeting these requirements will give the height of the square:
                 #(y_pixels_left_square[-1]-y_pixels_left_square[0])
 
                 y_pixels_left_square = np.where(y_pixels_left_square > 10)[0]
 
-                #The center of the square on the "y" axis may be reached by adding the vertical distance
-                #from the top of the image to the topmost horizontal side of the square ("y_pixels_left_square[0]",
-                #as the slicing used in the "np.num()" operation started from the top of the image) to the half-height
-                #of the square (y_pixels_left_square[-1]-y_pixels_left_square[0])/2).
-                y_center_left_square = round(y_pixels_left_square[0] + (y_pixels_left_square[-1]-y_pixels_left_square[0])/2)
+                #In order to reach the center of the square on the "y" axis, we need to add the amount of pixels needed
+                #to reach the topmost coordinate of the "image_filtered" slicing used in the "np.sum()" operation
+                #(25 px), then add the amount of pixels within that slice to reach the topmost side of the square
+                #(y_pixels_left_square[0]), and finally add the half-height of the square
+                #(y_pixels_left_square[-1]-y_pixels_left_square[0])/2).
+                y_center_left_square = (25 + round(y_pixels_left_square[0] +
+                (y_pixels_left_square[-1]-y_pixels_left_square[0])/2))
 
                 x_pixels_left_square = np.where(x_pixels_left_square > 10)[0]
 
@@ -582,19 +784,19 @@ if __name__ == '__main__':
                 #(dot_x_coordinates[0]-100), then add the amount of pixels within that slice to reach
                 #the leftmost vertical corner of the square (x_pixels_left_square[0]), and finally add the half-width of
                 #the square (x_pixels_left_square[-1]-x_pixels_left_square[0])/2).
-                x_center_left_square = round(dot_x_coordinates[0]-100 + x_pixels_left_square[0] +
+                x_center_left_square = round(max(0, dot_x_coordinates[0]-100) + x_pixels_left_square[0] +
                 (x_pixels_left_square[-1]-x_pixels_left_square[0])/2)
 
                 #The equivalent code to the one above is used for the gutter margin square on even (left-hand) pages.
-                y_pixels_right_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
-                round(dot_x_coordinates[-1]-150): round(dot_x_coordinates[-1]+100)], axis=1)
-                x_pixels_right_square = np.sum(image_filtered[:round(dot_y_coordinates[0]-100),
-                round(dot_x_coordinates[-1]-150): round(dot_x_coordinates[-1]+100)], axis=0)
+                y_pixels_right_square = np.sum(image_filtered[25:max(0, round(dot_y_coordinates[0]-100)),
+                max(0, round(dot_x_coordinates[-1]-150)): min(imgwidth, round(dot_x_coordinates[-1]+100))], axis=1)
+                x_pixels_right_square = np.sum(image_filtered[25:max(0, round(dot_y_coordinates[0]-100)),
+                max(0, round(dot_x_coordinates[-1]-150)): min(imgwidth, round(dot_x_coordinates[-1]+100))], axis=0)
 
                 y_pixels_right_square = np.where(y_pixels_right_square > 10)[0]
 
-                y_center_right_square = round(y_pixels_right_square[0] +
-                (y_pixels_right_square[-1]-y_pixels_right_square[0])/2)
+                y_center_right_square = (25 + round(y_pixels_right_square[0] +
+                (y_pixels_right_square[-1]-y_pixels_right_square[0])/2))
 
                 x_pixels_right_square = np.where(x_pixels_right_square > 10)[0]
 
@@ -604,7 +806,7 @@ if __name__ == '__main__':
                 #within that slice to reach the leftmost vertical corner of the square
                 #("x_pixels_right_square[0]"), and finally add the half-width of
                 #the square (x_pixels_right_square[-1]-x_pixels_right_square[0])/2).
-                x_center_right_square = (round(dot_x_coordinates[-1]-150 +
+                x_center_right_square = (max(0, round(dot_x_coordinates[-1]-150) +
                 x_pixels_right_square[0] + (x_pixels_right_square[-1]-x_pixels_right_square[0])/2))
 
                 #The slope of the line connecting center of the two corner squares is calculated and will
@@ -621,7 +823,7 @@ if __name__ == '__main__':
                 #dots remains constant and can be used to determine the exact "y" coordinates of the top
                 #left and top right dots, based on the "y" center coordinate of the left and right squares,
                 #respectively.
-                pixels_between_centers_of_black_square_and_top_dot = top_margin_y_pixel - (left_margin_x_pixel + 25)
+                pixels_between_centers_of_black_square_and_top_dot = top_margin_y_pixel - (pixels_above_black_squares + 25)
                 top_left_dot_y = round(y_center_left_square + pixels_between_centers_of_black_square_and_top_dot)
                 top_right_dot_y = round(y_center_right_square + pixels_between_centers_of_black_square_and_top_dot)
 
@@ -632,7 +834,6 @@ if __name__ == '__main__':
                 top_left_dot_x = round(x_center_left_square - 25*np.cos(slope_angle))
                 top_right_dot_x = round(x_center_left_square - 25*np.cos(slope_angle) +
                 (dot_x_coordinates[-1]-dot_x_coordinates[0])*np.cos(slope_angle))
-
 
                 #The rectangles are drawn on "text_image_copy" to allow users to evaluate
                 #how well the segmentation has proceeded.
@@ -645,7 +846,7 @@ if __name__ == '__main__':
                 #Left black square: A blue rectangle is drawn so as to outline the
                 #slicing region of the original "image_filtered" for the "np.sum" operation
                 cv2.rectangle(text_image_copy, (round(dot_x_coordinates[0]-100),
-                0), (round(dot_x_coordinates[0]+150),
+                25), (round(dot_x_coordinates[0]+150),
                 round(dot_y_coordinates[0]-100)), (255,0,0),3)
 
                 #Right black square: A red rectangle is drawn so as to outline the
@@ -656,25 +857,8 @@ if __name__ == '__main__':
                 #Right black square: A blue rectangle is drawn so as to outline the
                 #slicing region of the original "image_filtered" for the "np.sum" operation
                 cv2.rectangle(text_image_copy, (round(dot_x_coordinates[-1]-150),
-                0), (round(dot_x_coordinates[-1]+100),
+                25), (round(dot_x_coordinates[-1]+100),
                 round(dot_y_coordinates[0]-100)), (255,0,0),3)
-
-                #The hypothenuse here is the horizontal dimension between the next character's "x" coordinate and
-                #the starting "x" on the text line, in the untilted dot grid. So the next "x" coordinate is determined
-                #by multiplying that pixel count by the cosine of the slope angle, and then adding the current "x"
-                #coordinate, to allow the segmentation to walk forward on the line.
-                def get_next_x(k):
-                    next_x = round(current_x + (dot_x_coordinates[k+1]-dot_x_coordinates[0])*np.cos(slope_angle) -
-                    (dot_x_coordinates[k]-dot_x_coordinates[0])*np.cos(slope_angle))
-                    return next_x
-
-                #The hypothenuse here is the horizontal dimension between the next character's "x" coordinate and
-                #the starting "x" on the text line, in the untilted dot grid. So the next "y" coordinate is determined
-                #by multiplying that pixel count by the sine of the slope angle, and then adding the "y" coordinate
-                #of the starting top dot of that text line.
-                def get_next_y(k):
-                    next_y = round(next_line_y + ((dot_x_coordinates[k+1]-dot_x_coordinates[0])*np.sin(slope_angle)))
-                    return next_y
 
                 #The list of character "x,y" coordinates is populated with the character coordinates of each
                 #of the line indices within the "text_line_numbers" list. Each character list of coordinates
@@ -704,6 +888,11 @@ if __name__ == '__main__':
                         #four dot square chracter grid ("x_overlap") is added to allow for the last character on
                         #the line to have a horizontal overlap as well.
                         x_threshold = top_right_dot_x + x_overlap
+                        #The "y" threshold is determined by calculating the total height of the untilted dot grid, in pixels
+                        #("dot_y_coordinates[text_line_numbers[-1]]-dot_y_coordinates[text_line_numbers[0]]"), multiplying
+                        #it by the cosine of the slope angle, and then adding the "y" coordinate of the top left corner dot
+                        #("top_left_dot_y") to bring the threshold relative to the top left corner of the page, and the
+                        #vertical overlap pixels ("y_overlap").
                     elif slope < 0:
                         next_line_x = (round(top_left_dot_x - (dot_y_coordinates[text_line_numbers[j]]-
                         dot_y_coordinates[text_line_numbers[0]])*np.sin(slope_angle)))
@@ -746,6 +935,7 @@ if __name__ == '__main__':
                         #and "get_next_y(current_y,k)" functions, respectively.
                         next_x = get_next_x(k)
                         next_y = get_next_y(k)
+
                         #If the "next_x" is lower than the "x_threshold", then the rectangle is
                         #included in the "chars_x_y_coordinates" list at the current "j" line index.
                         if next_x < x_threshold:
@@ -888,443 +1078,750 @@ if __name__ == '__main__':
                                 blocks = (ImageBlock, CategoryBlock),
                                 get_items = get_image_files, batch_tfms = Normalize()
                                 )
+                
                 dls = data_block.dataloaders(path, bs=64)
-                dl = learn.dls.test_dl(char_files, shuffle=False)
+
+                dl = learn.dls.test_dl(char_files, shuffle=False, num_workers=0)
+                
                 #Obtain softmax results in the form of a one-hot vector per character
                 preds = learn.get_preds(dl=dl)[0].softmax(dim=1)
+                
                 #Determine which is the category index for the argmax of the character one-hot vectors.
                 preds_argmax = preds.argmax(dim=1).tolist()
+                
                 #Convert the category index for each character to its label and assemble
                 #a list of labels by list comprehension.
-                text = [learn.dls.vocab[preds_argmax[j]] for j in range(len(preds_argmax))]
+                text_current_page = [learn.dls.vocab[preds_argmax[j]] for j in range(len(preds_argmax))]
 
                 #If you want to print out the dictionary mapping the labels to the label
                 #indices, uncomment the following line:
                 # print(learn.dls.vocab.o2i)
 
-                #Once the "text" list of predicted characters has been populated, delete the individual
+                #Once the "text_current_page" list of predicted characters has been populated, delete the individual
                 #character ".jpg" images used for OCR (you can comment out the following lines of
                 #code should you want to retain them for troubleshooting purposes).
-                for j in range(len(text)):
+                for j in range(len(text_current_page)):
                     os.remove(os.path.join(path, str(j) + '.jpg'))
 
                 #Substitute the actual character labels for the labels that were written in long
                 #form for compatibility reasons.
-                for j in range(len(text)-1, -1, -1):
+                for j in range(len(text_current_page)-1, -1, -1):
                     #If the label is "empty" (a typo overlaid with a hashtag symbol),
                     #replace those characters with " ". Superfluous spaces are removed at the end of the code
                     #(text = "".join(text).replace("  ", " ")).
-                    if text[j] == "empty":
-                        text[j] = ""
+                    if text_current_page[j] == "empty":
+                        text_current_page[j] = ""
                     #If the label is a "space", it is replaced with " ".
-                    elif text[j] == "space":
-                        text[j] = " "
+                    elif text_current_page[j] == "space":
+                        text_current_page[j] = " "
                     #If the label is "forward slash", it is replaced with a forward slash.
-                    elif text[j] == "forward slash":
-                        text[j] = "/"
+                    elif text_current_page[j] == "forward slash":
+                        text_current_page[j] = "/"
                     #If the label is "backslash", it is replaced with a backslash.
-                    elif text[j] == "backslash":
-                        text[j] = "\\"
+                    elif text_current_page[j] == "backslash":
+                        text_current_page[j] = "\\"
                     #If the label is "pipe", it is replaced with a pipe symbol.
-                    elif text[j] == "pipe":
-                        text[j] = "|"
+                    elif text_current_page[j] == "pipe":
+                        text_current_page[j] = "|"
                     #If the label is "dollar sign", it is replaced for a dollar sign.
-                    elif text[j] == "dollar sign":
-                        text[j] = "$"
+                    elif text_current_page[j] == "dollar sign":
+                        text_current_page[j] = "$"
                     #If the label is "plus sign", it is replaced by a plus sign.
-                    elif text[j] == "plus sign":
-                        text[j] = "+"
+                    elif text_current_page[j] == "plus sign":
+                        text_current_page[j] = "+"
                     #If the label is "equals sign", it is replaced by an equals sign.
-                    elif text[j] == "equals sign":
-                        text[j] = "="
+                    elif text_current_page[j] == "equals sign":
+                        text_current_page[j] = "="
                     #If the label is "question mark", it is replaced by a question mark.
-                    elif text[j] == "question mark":
-                        text[j] = "?"
+                    elif text_current_page[j] == "question mark":
+                        text_current_page[j] = "?"
                     #If the label is "exclamation mark", it is replaced by an exclamation mark.
-                    elif text[j] == "exclamation mark":
-                        text[j] = "!"
+                    elif text_current_page[j] == "exclamation mark":
+                        text_current_page[j] = "!"
                     #If the label is "period", it is replaced with ".".
-                    elif text[j] == "period":
-                        text[j] = "."
+                    elif text_current_page[j] == "period":
+                        text_current_page[j] = "."
                     #If the label is "colon", it is replaced by a colon.
-                    elif text[j] == "colon":
-                        text[j] = ":"
+                    elif text_current_page[j] == "colon":
+                        text_current_page[j] = ":"
                     #If the label is "at sign", it is replaced by an at sign.
-                    elif text[j] == "at sign":
-                        text[j] = "@"
+                    elif text_current_page[j] == "at sign":
+                        text_current_page[j] = "@"
                     #If the label is "grave accent", it is replaced by a grave accent.
-                    elif text[j] == "grave accent":
-                        text[j] = "`"
+                    elif text_current_page[j] == "grave accent":
+                        text_current_page[j] = "`"
                     #If the label is "single quote", it is replaced by a symmetrical single
                     #quote ("'"), which will later be converted to the directional quote.
-                    elif text[j] == "single quote":
-                        text[j] = "'"
+                    elif text_current_page[j] == "single quote":
+                        text_current_page[j] = "'"
                     #If the label is "double quote", it is replaced by a symmetrical double
                     #quote ('"'), which will later be converted to the directional quote.
-                    elif text[j] == "double quote":
-                        text[j] = '"'
+                    elif text_current_page[j] == "double quote":
+                        text_current_page[j] = '"'
                     #If the label is "hashtag", it is replaced by a hashtag.
-                    elif text[j] == "hashtag":
-                        text[j] = "#"
+                    elif text_current_page[j] == "hashtag":
+                        text_current_page[j] = "#"
                     #If the label is "lesser-than sign", it is replaced by a lesser-than sign.
-                    elif text[j] == "lesser-than sign":
-                        text[j] = "<"
+                    elif text_current_page[j] == "lesser-than sign":
+                        text_current_page[j] = "<"
                     #If the label is "greater-than sign", it is replaced by a greater-than sign.
-                    elif text[j] == "greater-than sign":
-                        text[j] = ">"
+                    elif text_current_page[j] == "greater-than sign":
+                        text_current_page[j] = ">"
                     #If the label is "asterisk", it is replaced by an asterisk.
-                    elif text[j] == "asterisk":
-                        text[j] = "*"
+                    elif text_current_page[j] == "asterisk":
+                        text_current_page[j] = "*"
                     #If the label is "percent", it is replaced by a percent symbol.
-                    elif text[j] == "percent":
-                        text[j] = "%"
+                    elif text_current_page[j] == "percent":
+                        text_current_page[j] = "%"
                     #If the label is "ampersand", it is replaced with an ampersand symbol.
-                    elif text[j] == "ampersand":
-                        text[j] = "&"
+                    elif text_current_page[j] == "ampersand":
+                        text_current_page[j] = "&"
                     #If the label is "left curly bracket", it is changed for a left curly bracket.
-                    elif text[j] == "left curly bracket":
-                        text[j] = "{"
+                    elif text_current_page[j] == "left curly bracket":
+                        text_current_page[j] = "{"
                     #If the label is "right curly bracket", it is changed for a right curly bracket.
-                    elif text[j] == "right curly bracket":
-                        text[j] = "}"
+                    elif text_current_page[j] == "right curly bracket":
+                        text_current_page[j] = "}"
+                    #If the character is a lowercase letter, then the 
+                    #folder name comprised of the letter, followed by 
+                    #" (lowercase)" is created, where the parenthesized 
+                    #expression is required, as Windows folder names
+                    #are not case-sensitive.
+                    
+                    #If the character is an uppercase letter, then the 
+                    #folder name comprised of the letter, followed by 
+                    #" (uppercase)" is created, where the parenthesized 
+                    #expression is required, as Windows folder names
+                    #are not case-sensitive.
+                    
+                    #If the first character in the stripped label string 
+                    #is either lower or uppercased, then it means that it 
+                    #is a label for a letter, as all other labels containing 
+                    #letters have been dealt with above.
+                    elif (text_current_page[j].strip()[0].islower() or text_current_page[j].strip()[0].isupper()):
+                        text_current_page[j] = text_current_page[j].strip()[0]
 
                 #The following "for" loop removes spaces before and after hyphens, to
                 #ensure that hyphenated words do not include spaces.
-                for j in range(1, len(text)-1):
-                    if text[j] in ["–","—","—", "-"] and text[j-1].strip() == "":
-                        text[j-1] = ""
-                    elif text[j] in ["–","—","—", "-"] and text[j+1].strip() == "":
-                        text[j+1] = ""
+                for j in range(1, len(text_current_page)-1):
+                    if text_current_page[j] in ["–","—","—", "-"] and text_current_page[j-1].strip() == "":
+                        text_current_page[j-1] = ""
+                    elif text_current_page[j] in ["–","—","—", "-"] and text_current_page[j+1].strip() == "":
+                        text_current_page[j+1] = ""
 
-                '''DEFAULT (BASIC) RTF FORMATTING MODE'''
-                #Join the elements of the "text" list and perform a series of string substitutions
-                #to yield the OCR text. The following line replaces replaces "\par" with "\par\pard\tab ",
-                #to set the new paragraph's formatting to the default settings and to include a tab at
-                #the start of every new paragraph. After that, any new paragraphs that had centered \
-                #alignment ("\qc") have their tab removed, so that the centered alignment isn't shifted
-                #through the inclusion of a superfluous tab. For full rtf functionalities (without this
-                #last simplification), comment the next line out and activate the lines after it instead.
-                #An extra space is included after every RTF command, in case the user forgot to include
-                #the optional space after RTF commands, which would "eat up" a regular space. Any spaces
-                #in excess of two are automatically filtered out later in the code (after changing the RTF
-                #escapes). Finally, superfluous spaces before punctuation marks or closing brackets are removed.
-                text = ("".join(text).replace(r"\par", r"\par\pard\tab").replace(r"\par\pard\tab \qc", r"\par\pard\qc ")
-                .replace(r"\par\pard\tab\qc", r"\par\pard\qc ").replace(r"\b0", r"\b0 ").replace(r"\i0", r"\i0 ")
-                .replace(r"\scaps0", r"\scaps0 ").replace(r"\strike0", r"\strike0 ").replace(r"\ul0", r"\ul0 ")
-                .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace("( ", "(")
-                .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
+                #After processing the list "text_current_page"
+                #the "text" list is extended with it before 
+                #moving on to the next page.
+                text += text_current_page
+            
+            text = "".join(text)
+
+            #If the user has passed in the argument "autocorrect_case"
+            #when running the code, then any word containing lower cased letters
+            #or backslashes indicative of RTF commands will be lowercased, as there
+            #could have been OCR errors that introduced uppercase letters in a word,
+            #and these are much rarer than lowercase letters in most cases.
+            if not autocorrect_case:
+                #The "text" string will be split along spaces and then a nested "for"
+                #loop loops through every character of every word. If the word contains
+                #a backslash ("\\"), then it means that it is an RTF command and
+                #all following characters up to the next space should be lowercased. 
+                #If the word contains a lowercased letter (".islower() == True"),
+                #then all subsequent letters in the word should also be lowercased.
+                word_list = text.split(" ")
+                for j in range(len(word_list)):
+                    is_lowercased_word = False
+                    for k in range(len(word_list[j])):
+                        if (word_list[j][k] == "\\" or word_list[j][k].islower()):
+                            is_lowercased_word = True
+                        #If the value of "is_lowercased_word" is "True"
+                        #and the current word is comprised of more than 
+                        #one character (hence another iteration of the 
+                        #"for k in range(len(word_list[j]))" loop, then 
+                        #The sliced word from index "k" to the end will 
+                        #be lowercased.
+                        elif is_lowercased_word:
+                            word_list[j] = word_list[j][:k] + word_list[j][k:].lower()
+                    #If any of the characters within a word comprised of more than one letter
+                    #is lowercased after the "for k in range(len(word_list[j]))" loop is complete,
+                    #then the word will be lowercased starting with the second character, in case
+                    #the first character was a capital letter.
+                    if (any(char.islower() for char in word_list[j]) and len(word_list[j]) > 1):
+                        word_list[j] = word_list[j][0] + word_list[j][1:].lower()
+                #The spaces that were removed when splitting the string are added back by the " ".join() method.
+                text = " ".join(word_list)
+
+            '''DEFAULT (BASIC) RTF FORMATTING MODE'''
+            #Join the elements of the "text" list and perform a series of string substitutions
+            #to yield the OCR text. The following line replaces replaces "\par" with "\par\pard ",
+            #to set the new paragraph's formatting to the default settings. For full rtf functionalities 
+            #(without this last simplification), comment the next line out and activate the lines after it 
+            #instead. An extra space is included after every RTF command, in case the user forgot to include
+            #the optional space after RTF commands, which would "eat up" a regular space. Any spaces
+            #in excess of two are automatically filtered out later in the code (after changing the RTF
+            #escapes). Finally, superfluous spaces before punctuation marks or closing brackets are removed.
+            text = (text.replace(r"\par", r"\par\pard").replace(r"\ql", r"\ql ").replace(r"\qr", r"\qr ")
+            .replace(r"\qj", r"\qj ").replace(r"\qc", r"\qc ").replace(r"\b0", r"\b0 ").replace(r"\i0", r"\i0 ")
+            .replace(r"\scaps0", r"\scaps0 ").replace(r"\strike0", r"\strike0 ").replace(r"\ul0", r"\ul0 ")
+            .replace(r"\sub", r"\sub ").replace(r"\super", r"\super ").replace(r"\keepn", r"\keepn ")
+            .replace(" .", ".").replace(" ,", ",").replace(" :", ":").replace(" ;", ";").replace("( ", "(")
+            .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
+
+            '''ADVANCED RTF FORMATTING MODE'''
+            #See comments above in the Default (Basic) RTF formatting mode for more details.
+            # text = text.replace(r"\ql", r"\ql ").replace(r"\qr", r"\qr ")
+            # .replace(r"\qj", r"\qj ").replace(r"\qc", r"\qc ")
+            # .replace(r"\b0", r"\b0 ").replace(r"\i0", r"\i0 ")
+            # .replace(r"\scaps0", r"\scaps0 ").replace(r"\strike0", r"\strike0 ")
+            # .replace(r"\sub", r"\sub ").replace(r"\super", r"\super ").replace(r"\keepn", r"\keepn ")
+            # .replace(r"\ul0", r"\ul0 ").replace(" .", ".").replace(" ,", ",")
+            # .replace(" :", ":").replace(" ;", ";").replace("( ", "(")
+            # .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
+            
+            #Any opening RTF commands such as "\b" for bold that are not 
+            #followed by a zero (closing tag) will have a space inserted 
+            #between the RTF command and the following character, in case 
+            #the user forgot to include an optional space after the RTF 
+            #command, which would "eat up" a regular space.
+            rtf_patterns = [r"(\\b)([^0])", r"(\\caps)([^0])", r"(\\i)([^0])", 
+                r"(\\scaps)([^0])", r"(\\strike)([^0])", r"(\\ul)([^0])"]
+            for pattern in rtf_patterns:
+                text = re.sub(pattern, r"\1 \2", text)
+
+            #The variable "original_text" will store the "text" string,
+            #so that excerpts may be extracted to indicate where are any
+            #special characters that are not RTF-escapable. This needs to
+            #be done before adding RTF escapes, so that the excerpts may
+            #be human readable.
+            original_text = text
+
+            #If the user has selected the "basic_autocorrect_lower" option, then the code
+            #will screen the misspelled words in the page (words that aren't found
+            #within the more extensive "english_dict", here based on a 143K-word
+            #dictionary "wlist_match7.txt") to see if any of them could be corrected by
+            #altering one letter, and that the resulting word could be found in
+            #the 15K-unambiguous word dictionary "short_english_dict", itself
+            #derived from the 27K-word dictionary "wlist_match12.txt". If so,
+            #the substitution would be made.
+            #Also, the corrected word would only be in uppercase if every letter
+            #of the misspelled word was in uppercase as well. Otherwise, the
+            #corrected word will be in lowercase. The autocorrection steps
+            #need to be performed before substitution of quotes and double quotes
+            #to their RTF escape counterparts, as the "TextBlob" spellchecker
+            #might recognize them and apply corrections, but this would likely
+            #not be the case with the RTF escapes in their stead.
+            if basic_autocorrect_lower == True:
+                #First split the string along characters that aren't letters nor single quotes 
+                #to avoid splitting contractions (ex: "don't").
+                word_list = re.split(r"([^\w'’]+)", text)
+                #Then split any single quotes at the start or end of the word, as these aren't 
+                #contractions (ex: "‘Don't!’")
+                word_list = [re.split(r"(\A['’‘]|\Z['’])", word) for word in word_list]
+                #Then flatten the list to remove the nested level created by the second "re.split()".
+                word_list = [word for sublist in word_list for word in sublist if word != ""]
+                for j in range(len(word_list)):
+                    if (word_list[j].isalpha() and word_list[j][0].islower() and
+                    len(word_list[j]) > 4 and word_list[j] + "\n" not in english_dict):
+                        len_misspelled_word = len(word_list[j])
+                        start_misspelled_word = word_list[j][:3]
+                        end_misspelled_word = word_list[j][-3:]
+                        matching_words = [w.strip() for w in short_english_dict if
+                        len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
+                        w.strip()[-3:] == end_misspelled_word)]
+                        for k in range(len(matching_words)):
+                            matching_letters_counter = 0
+                            for l in range(len(matching_words[k])):
+                                if matching_words[k][l] == word_list[j][l]:
+                                    matching_letters_counter += 1
+                            if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
+                                word_list[j] = matching_words[k].upper()
+                                break
+                            elif matching_letters_counter == len_misspelled_word-1:
+                                word_list[j] = matching_words[k]
+                                break
+                corrected_text = "".join(word_list)
 
 
-                '''ADVANCED RTF FORMATTING MODE'''
-                #See comments above in the Default (Basic) RTF formatting mode for more details.
-                # text = ("".join(text).replace(r"\b0", r"\b0 ").replace(r"\i0", r"\i0 ")
-                # .replace(r"\scaps0", r"\scaps0 ").replace(r"\strike0", r"\strike0 ")
-                # .replace(r"\ul0", r"\ul0 ").replace(" .", ".").replace(" ,", ",")
-                # .replace(" :", ":").replace(" ;", ";").replace("( ", "(")
-                # .replace(" )", ")").replace(" ?", "?").replace(" !", "!"))
+            #If the user has selected the "basic_autocorrect_lower" option, then the code
+            #will screen the misspelled words in the page (words that aren't found
+            #within the more extensive "english_dict", here based on a 143K-word
+            #dictionary "wlist_match7.txt") to see if any of them could be corrected by
+            #altering one letter, and that the resulting word could be found in
+            #the 15K-unambiguous word dictionary "short_english_dict", itself
+            #derived from the 27K-word dictionary "wlist_match12.txt". If so,
+            #the substitution would be made.
+            #Also, the corrected word would be in uppercase if every letter
+            #of the misspelled word was in uppercase as well. If only the first
+            #letter of the misspelt word was in uppercase, then the corrected
+            #word would be capitalized. Otherwise, the corrected word will be
+            #in lowercase.
+            elif basic_autocorrect == True:
+                #First split the string along characters that aren't letters nor single quotes 
+                #to avoid splitting contractions (ex: "don't").
+                word_list = re.split(r"([^\w'’]+)", text)
+                #Then split any single quotes at the start or end of the word, as these aren't 
+                #contractions (ex: "‘Don't!’")
+                word_list = [re.split(r"(\A['’‘]|\Z['’])", word) for word in word_list]
+                #Then flatten the list to remove the nested level created by the second "re.split()".
+                word_list = [word for sublist in word_list for word in sublist if word != ""]
+                for j in range(len(word_list)):
+                    if (word_list[j].isalpha() and len(word_list[j]) > 4 and
+                    word_list[j] + "\n" not in english_dict):
+                        len_misspelled_word = len(word_list[j])
+                        start_misspelled_word = word_list[j][:3]
+                        end_misspelled_word = word_list[j][-3:]
+                        matching_words = [w.strip() for w in short_english_dict if
+                        len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
+                        w.strip()[-3:] == end_misspelled_word)]
+                        for k in range(len(matching_words)):
+                            matching_letters_counter = 0
+                            for l in range(len(matching_words[k])):
+                                if matching_words[k][l] == word_list[j][l]:
+                                    matching_letters_counter += 1
+                            if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
+                                word_list[j] = matching_words[k].upper()
+                                break
+                            elif matching_letters_counter == len_misspelled_word-1 and word_list[j][0].isupper():
+                                word_list[j] = matching_words[k].capitalize()
+                                break
+                            elif matching_letters_counter == len_misspelled_word-1:
+                                word_list[j] = matching_words[k]
+                                break
+                corrected_text = "".join(word_list)
 
 
-                #If the user has selected the "basic_autocorrect_lower" option, then the code
-                #will screen the misspelled words in the page (words that aren't found
-                #within the more extensive "english_dict", here based on a 143K-word
-                #dictionary "wlist_match7.txt") to see if any of them could be corrected by
-                #altering one letter, and that the resulting word could be found in
-                #the 15K-unambiguous word dictionary "short_english_dict", itself
-                #derived from the 27K-word dictionary "wlist_match12.txt". If so,
-                #the substitution would be made.
-                #Also, the corrected word would only be in uppercase if every letter
-                #of the misspelled word was in uppercase as well. Otherwise, the
-                #corrected word will be in lowercase. The autocorrection steps
-                #need to be performed before substitution of quotes and double quotes
-                #to their RTF escape counterparts, as the "TextBlob" spellchecker
-                #might recognize them and apply corrections, but this would likely
-                #not be the case with the RTF escapes in their stead.
-                if basic_autocorrect_lower == True:
-                    word_list = re.split(r'(\W+)', text)
-                    for j in range(len(word_list)):
-                        if (word_list[j].isalpha() and word_list[j][0].islower() and
-                        len(word_list[j]) > 4 and word_list[j] + "\n" not in english_dict):
-                            len_misspelled_word = len(word_list[j])
-                            start_misspelled_word = word_list[j][:3]
-                            end_misspelled_word = word_list[j][-3:]
-                            matching_words = [w.strip() for w in short_english_dict if
-                            len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
-                            w.strip()[-3:] == end_misspelled_word)]
-                            for k in range(len(matching_words)):
-                                matching_letters_counter = 0
-                                for l in range(len(matching_words[k])):
-                                    if matching_words[k][l] == word_list[j][l]:
-                                        matching_letters_counter += 1
-                                if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
-                                    word_list[j] = matching_words[k].upper()
-                                    break
-                                elif matching_letters_counter == len_misspelled_word-1:
-                                    word_list[j] = matching_words[k]
-                                    break
-                    corrected_text = "".join(word_list)
+            #If the user has selected the "autocorrect" option, then the code
+            #will screen all of the words against the TextBlob "spellcheck()" method,
+            #and substitutions will only be done if the confidence is above 90% that
+            #the suggestion is the correct one. Also, the corrected word would be
+            #in uppercase if every letter of the misspelled word was in uppercase
+            #as well. If only the first letter of the misspelt word was in uppercase,
+            #then the corrected word would be capitalized. Otherwise, the corrected
+            #word will be in lowercase.
+            elif autocorrect == True:
+                #First split the string along characters that aren't letters nor single quotes 
+                #to avoid splitting contractions (ex: "don't").
+                word_list = re.split(r"([^\w'’]+)", text)
+                #Then split any single quotes at the start or end of the word, as these aren't 
+                #contractions (ex: "‘Don't!’")
+                word_list = [re.split(r"(\A['’‘]|\Z['’])", word) for word in word_list]
+                #Then flatten the list to remove the nested level created by the second "re.split()".
+                word_list = [word for sublist in word_list for word in sublist if word != ""]
+                for j in range(len(word_list)):
+                    #Only words entirely comprised of unaccented letters may be spellchecked by textblob,
+                    #and we need to ignore any common RTF commands after splitting the "\".
+                    if re.match("^[a-zA-Z]+$", word_list[j]) and word_list[j] not in ["qc", "qj", "ql", "qr", "par", "pard", "fs", "scaps", "sub", "ul", "b"]:
+                        word_object = Word(word_list[j])
+                        #In case the "get_predictions.py" code was 
+                        #compiled with "pyinstaller" without including 
+                        #the textblob dictionary files using the 
+                        #"pyinstaller --onefile --collect-data textblob get_predictions.py"
+                        #command, a "try" loop will deal with any empty results when using 
+                        #the "spellcheck()" textblob method.
+                        try:
+                            word_suggestions = word_object.spellcheck()
+                            if word_suggestions:
+                                word_suggestion = word_suggestions[0]
+                                if word_suggestion[1] >= autocorrect_confidence:
+                                    if word_list[j].isupper():
+                                        word_list[j] = word_suggestion[0].upper()
+                                    elif word_list[j][0].isupper():
+                                        word_list[j] = word_suggestion[0].capitalize()
+                                    else:
+                                        word_list[j] = word_suggestion[0]
+                        except:
+                            pass
+                corrected_text = "".join(word_list)
 
 
-                #If the user has selected the "basic_autocorrect_lower" option, then the code
-                #will screen the misspelled words in the page (words that aren't found
-                #within the more extensive "english_dict", here based on a 143K-word
-                #dictionary "wlist_match7.txt") to see if any of them could be corrected by
-                #altering one letter, and that the resulting word could be found in
-                #the 15K-unambiguous word dictionary "short_english_dict", itself
-                #derived from the 27K-word dictionary "wlist_match12.txt". If so,
-                #the substitution would be made.
-                #Also, the corrected word would be in uppercase if every letter
-                #of the misspelled word was in uppercase as well. If only the first
-                #letter of the misspelt word was in uppercase, then the corrected
-                #word would be capitalized. Otherwise, the corrected word will be
-                #in lowercase.
-                elif basic_autocorrect == True:
-                    word_list = re.split(r'(\W+)', text)
-                    for j in range(len(word_list)):
-                        if (word_list[j].isalpha() and len(word_list[j]) > 4 and
-                        word_list[j] + "\n" not in english_dict):
-                            len_misspelled_word = len(word_list[j])
-                            start_misspelled_word = word_list[j][:3]
-                            end_misspelled_word = word_list[j][-3:]
-                            matching_words = [w.strip() for w in short_english_dict if
-                            len(w.strip()) == len_misspelled_word and (w.strip()[:3] == start_misspelled_word or
-                            w.strip()[-3:] == end_misspelled_word)]
-                            for k in range(len(matching_words)):
-                                matching_letters_counter = 0
-                                for l in range(len(matching_words[k])):
-                                    if matching_words[k][l] == word_list[j][l]:
-                                        matching_letters_counter += 1
-                                if matching_letters_counter == len_misspelled_word-1 and word_list[j].isupper():
-                                    word_list[j] = matching_words[k].upper()
-                                    break
-                                elif matching_letters_counter == len_misspelled_word-1 and word_list[j][0].isupper():
-                                    word_list[j] = matching_words[k].capitalize()
-                                    break
-                                elif matching_letters_counter == len_misspelled_word-1:
-                                    word_list[j] = matching_words[k]
-                                    break
-                    corrected_text = "".join(word_list)
-
-
-                #If the user has selected the "autocorrect" option, then the code
-                #will screen all of the words against the TextBlob "spellcheck()" method,
-                #and substitutions will only be done if the confidence is above 90% that
-                #the suggestion is the correct one. Also, the corrected word would be
-                #in uppercase if every letter of the misspelled word was in uppercase
-                #as well. If only the first letter of the misspelt word was in uppercase,
-                #then the corrected word would be capitalized. Otherwise, the corrected
-                #word will be in lowercase.
-                elif autocorrect == True:
-                    word_list = re.split(r'(\W+)', text)
-                    for j in range(len(word_list)):
-                        if word_list[j].isalpha() and word_list[j] != "qc":
-                            word_suggestion = Word(word_list[j]).spellcheck()[0]
-                            if word_suggestion[1] >= autocorrect_confidence:
-                                if word_list[j].isupper():
-                                    word_list[j] = word_suggestion[0].upper()
-                                elif word_list[j][0].isupper():
-                                    word_list[j] = word_suggestion[0].capitalize()
-                                else:
-                                    word_list[j] = word_suggestion[0]
-                    corrected_text = "".join(word_list)
-
-
-                #If there is at least one instance of a non-directional single "'" or
-                #double '"' quote in the "text" string, or if the user has selected the
-                #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
-                #quotes found within the page are switched to their non-directional counterparts.
-                #This would be relevant if the user has trained the CNN model on directional
-                #quotes, but didn't get good OCR accuracy when handling them. Alternatively,
-                #if the user has trained their model on directional quotes but wants to have
-                #symmetrical quotes in the final document, the directional quotes, if present,
-                #still need to be changed for the symmetrical quotes. After that first step,
-                #if there was at least one instance of a symmetrical quote in the document and
-                #that the user didn't specify the "symmetrical_quotes" option, or if they
-                #selected the "smart_quotes" option, the appropriate directional quotes will
-                #be applied to the page.
-                if (smart_quotes == True or symmetrical_quotes == True or
-                (text.find("'") != -1 or text.find('"') != -1)):
-                    text = (text.replace("‘", "'").replace("’", "'")
+            #If there is at least one instance of a non-directional single "'" or
+            #double '"' quote in the "text" string, or if the user has selected the
+            #"smart_quotes" or "symmetrical_quotes" options, then all of the directional
+            #quotes found within the page are switched to their non-directional counterparts.
+            #This would be relevant if the user has trained the CNN model on directional
+            #quotes, but didn't get good OCR accuracy when handling them. Alternatively,
+            #if the user has trained their model on directional quotes but wants to have
+            #symmetrical quotes in the final document, the directional quotes, if present,
+            #still need to be changed for the symmetrical quotes. After that first step,
+            #if there was at least one instance of a symmetrical quote in the document and
+            #that the user didn't specify the "symmetrical_quotes" option, or if they
+            #selected the "smart_quotes" option, the appropriate directional quotes will
+            #be applied to the page.
+            if (smart_quotes == True or symmetrical_quotes == True or
+            (text.find("'") != -1 or text.find('"') != -1)):
+                text = (text.replace("‘", "'").replace("’", "'")
+                .replace('“', '"').replace('”', '"'))
+                #The same modifications with respect to smartquotes and RTF escapes need to be
+                #done to the corrected text string (if the user has selected this option), as
+                #the correction step needs to be performed before changing any character to its
+                #corresponding RTF escape, which could lead to exclusions when performing the
+                #autocorrect with the TextBlob module.
+                if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                    corrected_text = (corrected_text.replace("‘", "'").replace("’", "'")
                     .replace('“', '"').replace('”', '"'))
-                    #The same modifications with respect to smartquotes and RTF escapes need to be
-                    #done to the corrected text string (if the user has selected this option), as
-                    #the correction step needs to be performed before changing any character to its
-                    #corresponding RTF escape, which could lead to exclusions when performing the
-                    #autocorrect with the TextBlob module.
+
+                #The symmetrical quotes will be changed to their directional counterparts,
+                #if the user hasn't passed in the "symmetrical_quotes" argument, in which
+                #case the final document will have the symmetrical quotes.
+                if symmetrical_quotes == False:
+                    #The nested quotes and single or double quotes followed by a space (and thus mapping
+                    #to closing directional quotes) are changed to their RTF escape equivalents.
+                    quote_substitutions = [['"' + "'", r"\'93" + r"\'91"], ["'" + '"', r"\'92" + r"\'94"],
+                    ["' ", r"\'92" + ' '], ['" ', r"\'94" + ' ']]
+                    for quote in quote_substitutions:
+                        text = re.sub(quote[0], quote[1], text)
+                        if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                            corrected_text = re.sub(quote[0], quote[1], corrected_text)
+
+                    #If the first character of the "text" string
+                    #is a quote, it is then changed for the corresponding
+                    #opening directional quote.
+                    if text[0] == "'":
+                        text = r"\'91" + text[1:]
+                    elif text[0] == '"':
+                        text = r"\'93" + text[1:]
                     if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                        corrected_text = (corrected_text.replace("‘", "'").replace("’", "'")
-                        .replace('“', '"').replace('”', '"'))
-
-                    #The symmetrical quotes will be changed to their directional counterparts,
-                    #if the user hasn't passed in the "symmetrical_quotes" argument, in which
-                    #case the final document will have the symmetrical quotes.
-                    if symmetrical_quotes == False:
-                        #The nested quotes and single or double quotes followed by a space (and thus mapping
-                        #to closing directional quotes) are changed to their RTF escape equivalents.
-                        quote_substitutions = [['"' + "'", r"\'93" + r"\'91"], ["'" + '"', r"\'92" + r"\'94"],
-                        ["' ", r"\'92" + ' '], ['" ', r"\'94" + ' ']]
-                        for quote in quote_substitutions:
-                            text = re.sub(quote[0], quote[1], text)
-                            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                                corrected_text = re.sub(quote[0], quote[1], corrected_text)
-
-                        #If the first character of the "text" string
-                        #is a quote, it is then changed for the corresponding
-                        #opening directional quote.
-                        if text[0] == "'":
-                            text = r"\'91" + text[1:]
-                        elif text[0] == '"':
-                            text = r"\'93" + text[1:]
-                        if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                            if corrected_text[0] == "'":
-                                corrected_text = r"\'91" + corrected_text[1:]
-                            elif corrected_text[0] == '"':
-                                corrected_text = r"\'93" + corrected_text[1:]
+                        if corrected_text[0] == "'":
+                            corrected_text = r"\'91" + corrected_text[1:]
+                        elif corrected_text[0] == '"':
+                            corrected_text = r"\'93" + corrected_text[1:]
 
 
-                        #If the last character of the "text" string
-                        #is a quote, it is then changed for the corresponding
-                        #closing directional quote.
-                        if text[-1] == "'":
-                            text = text[:-1] + r"\'92"
-                        elif text[-1] == '"':
-                            text = text[:-1] + r"\'94"
-                        if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                            if corrected_text[-1] == "'":
-                                corrected_text = corrected_text[:-1] + r"\'92"
-                            elif corrected_text[-1] == '"':
-                                corrected_text = corrected_text[:-1] + r"\'94"
+                    #If the last character of the "text" string
+                    #is a quote, it is then changed for the corresponding
+                    #closing directional quote.
+                    if text[-1] == "'":
+                        text = text[:-1] + r"\'92"
+                    elif text[-1] == '"':
+                        text = text[:-1] + r"\'94"
+                    if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                        if corrected_text[-1] == "'":
+                            corrected_text = corrected_text[:-1] + r"\'92"
+                        elif corrected_text[-1] == '"':
+                            corrected_text = corrected_text[:-1] + r"\'94"
 
-                        #The indices of any remaining symmetrical double quotes ('"') are stored in
-                        #the list "double_quote_indices" and cycled through using a "for" loop.
+                    #The indices of any remaining symmetrical double quotes ('"') are stored in
+                    #the list "double_quote_indices" and cycled through using a "for" loop.
+                    #If the index is above zero and smaller than the last index of the "double_quote_indices"
+                    #list, and if the preceding character is not a space, "(", "[", "{", "-", "_" then the
+                    #closing directional quote is substituted for the symmetrical one. The "text"
+                    #string is updated by slicing it while skipping over what was the symmetrical double
+                    #quote ('"') at index "double_quote_indices[i]" in "text". The "for" loop proceeds
+                    #in reverse order to avoid indexing issues when substituting quotes for multi-character RTF escapes.
+                    double_quote_matches = re.finditer('"', text)
+                    double_quote_indices = [match.start() for match in double_quote_matches]
+                    for i in range(len(double_quote_indices)-1, -1, -1):
+                        if (double_quote_indices[i] > 0 and double_quote_indices[i] < len(text)-1 and
+                        text[double_quote_indices[i]-1] not in [" ", "(", "[", "{", "-", "_"]):
+                            text = (text[:double_quote_indices[i]] + r"\'94" +
+                            text[double_quote_indices[i]+1:])
+
+
                         #If the index is above zero and smaller than the last index of the "double_quote_indices"
-                        #list, and if the preceding character is not a space, "(", "[", "{", "-", "_" then the
-                        #closing directional quote is substituted for the symmetrical one. The "text"
-                        #string is updated by slicing it while skipping over what was the symmetrical double
-                        #quote ('"') at index "double_quote_indices[i]" in "text". The "for" loop proceeds
-                        #in reverse order to avoid indexing issues when substituting quotes for multi-character RTF escapes.
-                        double_quote_matches = re.finditer('"', text)
+                        #list, and if the previous character is not a letter and the following character is either
+                        #a letter or "¡", "¿" (which would start an exclamation or question, respectively, in Spanish)
+                        #a backslash (if the quote is followed by an RTF command or escape such as "\i"),
+                        #or a smallcaps (the italics will be dealt with after this step), then the double quote
+                        #is changed to the opening directional quote.
+                        elif (double_quote_indices[i] > 0 and double_quote_indices[i] < len(text)-1 and
+                        (text[double_quote_indices[i]-1].isalpha() == False and
+                        (text[double_quote_indices[i]+1].isalpha() or
+                        text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                            text = (text[:double_quote_indices[i]] + r"\'93" +
+                            text[double_quote_indices[i]+1:])
+
+
+                    if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                        double_quote_matches = re.finditer('"', corrected_text)
                         double_quote_indices = [match.start() for match in double_quote_matches]
                         for i in range(len(double_quote_indices)-1, -1, -1):
-                            if (double_quote_indices[i] > 0 and double_quote_indices[i] < len(text)-1 and
-                            text[double_quote_indices[i]-1] not in [" ", "(", "[", "{", "-", "_"]):
-                                text = (text[:double_quote_indices[i]] + r"\'94" +
-                                text[double_quote_indices[i]+1:])
+                            if (double_quote_indices[i] > 0 and double_quote_indices[i] < len(corrected_text)-1 and
+                            corrected_text[double_quote_indices[i]-1] not in [" ", "(", "[", "{", "-", "_"]):
+                                corrected_text = (corrected_text[:double_quote_indices[i]] + r"\'94" +
+                                corrected_text[double_quote_indices[i]+1:])
+                            elif (double_quote_indices[i] > 0 and double_quote_indices[i] < len(corrected_text)-1 and
+                            (corrected_text[double_quote_indices[i]-1].isalpha() == False and
+                            (corrected_text[double_quote_indices[i]+1].isalpha() or
+                            corrected_text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                                corrected_text = (corrected_text[:double_quote_indices[i]] + r"\'93" +
+                                corrected_text[double_quote_indices[i]+1:])
 
 
-                            #If the index is above zero and smaller than the last index of the "double_quote_indices"
-                            #list, and if the previous character is not a letter and the following character is either
-                            #a letter or "¡", "¿" (which would start an exclamation or question, respectively, in Spanish)
-                            #a backslash (if the quote is followed by an RTF command or escape such as "\i"),
-                            #or a smallcaps (the italics will be dealt with after this step), then the double quote
-                            #is changed to the opening directional quote.
-                            elif (double_quote_indices[i] > 0 and double_quote_indices[i] < len(text)-1 and
-                            (text[double_quote_indices[i]-1].isalpha() == False and
-                            (text[double_quote_indices[i]+1].isalpha() or
-                            text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
-                                text = (text[:double_quote_indices[i]] + r"\'93" +
-                                text[double_quote_indices[i]+1:])
+                    single_quote_matches = re.finditer("'", text)
+                    single_quote_indices = [match.start() for match in single_quote_matches]
+                    for i in range(len(single_quote_indices)-1, -1, -1):
+                        #The "if" statement will also change the symmetrical single quote to the closing
+                        #directional single quote in contractions such as "don't", as only the preceding character
+                        #is considered. In this case, the preceding character must not be a space, "(", "[", "{",
+                        #"-", "_" nor a backslash (so that the single quote in the RTF escapes (such as r"\'92"))
+                        #are not confused for actual single quotes.
+                        if (single_quote_indices[i] > 0  and single_quote_indices[i] < len(text)-1 and
+                        text[single_quote_indices[i]-1] != "\\" and text[single_quote_indices[i]-1] not in
+                        [" ", "(", "[", "{", "-", "_",  "\\"]):
+                            text = (text[:single_quote_indices[i]] + r"\'92" +
+                            text[single_quote_indices[i]+1:])
+                        elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(text)-1 and
+                        (text[single_quote_indices[i]-1] != "\\" and
+                        text[single_quote_indices[i]-1].isalpha() == False and
+                        (text[single_quote_indices[i]+1].isalpha() or
+                        text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                            text = (text[:single_quote_indices[i]] + r"\'91" +
+                            text[single_quote_indices[i]+1:])
 
-
-                        if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                            double_quote_matches = re.finditer('"', corrected_text)
-                            double_quote_indices = [match.start() for match in double_quote_matches]
-                            for i in range(len(double_quote_indices)-1, -1, -1):
-                                if (double_quote_indices[i] > 0 and double_quote_indices[i] < len(corrected_text)-1 and
-                                corrected_text[double_quote_indices[i]-1] not in [" ", "(", "[", "{", "-", "_"]):
-                                    corrected_text = (corrected_text[:double_quote_indices[i]] + r"\'94" +
-                                    corrected_text[double_quote_indices[i]+1:])
-                                elif (double_quote_indices[i] > 0 and double_quote_indices[i] < len(corrected_text)-1 and
-                                (corrected_text[double_quote_indices[i]-1].isalpha() == False and
-                                (corrected_text[double_quote_indices[i]+1].isalpha() or
-                                corrected_text[double_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
-                                    corrected_text = (corrected_text[:double_quote_indices[i]] + r"\'93" +
-                                    corrected_text[double_quote_indices[i]+1:])
-
-
-                        single_quote_matches = re.finditer("'", text)
+                    if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                        single_quote_matches = re.finditer("'", corrected_text)
                         single_quote_indices = [match.start() for match in single_quote_matches]
                         for i in range(len(single_quote_indices)-1, -1, -1):
-                            #The "if" statement will also change the symmetrical single quote to the closing
-                            #directional single quote in contractions such as "don't", as only the preceding character
-                            #is considered. In this case, the preceding character must not be a space, "(", "[", "{",
-                            #"-", "_" nor a backslash (so that the single quote in the RTF escapes (such as r"\'92"))
-                            #are not confused for actual single quotes.
-                            if (single_quote_indices[i] > 0  and single_quote_indices[i] < len(text)-1 and
-                            text[single_quote_indices[i]-1] != "\\" and text[single_quote_indices[i]-1] not in
+                            if (single_quote_indices[i] > 0  and single_quote_indices[i] < len(corrected_text)-1 and
+                            corrected_text[single_quote_indices[i]-1] != "\\" and corrected_text[single_quote_indices[i]-1] not in
                             [" ", "(", "[", "{", "-", "_",  "\\"]):
-                                text = (text[:single_quote_indices[i]] + r"\'92" +
-                                text[single_quote_indices[i]+1:])
-                            elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(text)-1 and
-                            (text[single_quote_indices[i]-1] != "\\" and
-                            text[single_quote_indices[i]-1].isalpha() == False and
-                            (text[single_quote_indices[i]+1].isalpha() or
-                            text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
-                                text = (text[:single_quote_indices[i]] + r"\'91" +
-                                text[single_quote_indices[i]+1:])
+                                corrected_text = (corrected_text[:single_quote_indices[i]] + r"\'92" +
+                                corrected_text[single_quote_indices[i]+1:])
+                            elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(corrected_text)-1 and
+                            (corrected_text[single_quote_indices[i]-1] != "\\" and
+                            corrected_text[single_quote_indices[i]-1].isalpha() == False and
+                            (corrected_text[single_quote_indices[i]+1].isalpha() or
+                            corrected_text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
+                                corrected_text = (corrected_text[:single_quote_indices[i]] + r"\'91" +
+                                corrected_text[single_quote_indices[i]+1:])
 
-                        if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                            single_quote_matches = re.finditer("'", corrected_text)
-                            single_quote_indices = [match.start() for match in single_quote_matches]
-                            for i in range(len(single_quote_indices)-1, -1, -1):
-                                if (single_quote_indices[i] > 0  and single_quote_indices[i] < len(corrected_text)-1 and
-                                corrected_text[single_quote_indices[i]-1] != "\\" and corrected_text[single_quote_indices[i]-1] not in
-                                [" ", "(", "[", "{", "-", "_",  "\\"]):
-                                    corrected_text = (corrected_text[:single_quote_indices[i]] + r"\'92" +
-                                    corrected_text[single_quote_indices[i]+1:])
-                                elif (single_quote_indices[i] > 0 and single_quote_indices[i] < len(corrected_text)-1 and
-                                (corrected_text[single_quote_indices[i]-1] != "\\" and
-                                corrected_text[single_quote_indices[i]-1].isalpha() == False and
-                                (corrected_text[single_quote_indices[i]+1].isalpha() or
-                                corrected_text[single_quote_indices[i]+1] in ["¡", "¿", "\\", "_"]))):
-                                    corrected_text = (corrected_text[:single_quote_indices[i]] + r"\'91" +
-                                    corrected_text[single_quote_indices[i]+1:])
+            #RANDOM SUBSTITUTION: Any instance of '“‘”' (in RTF escape form) would be changed to '“‘“'
+            #(in RTF escape form), as I've noticed that the opening multi-level nested quotes are not
+            #handled well by the code above. The "replace()" methods below handle three and two-level
+            #opening nested quotes, but you would need to do manual substitutions for higher levels
+            #of quote nesting.
+            text = (text.replace(r"\'93" + r"\'91" + r"\'94", r"\'93" + r"\'91" + r"\'93")
+            .replace(r"\'91" + r"\'93" + r"\'92", r"\'91" + r"\'93" + r"\'91")
+            .replace(r"\'93" + r"\'94", r"\'93" + r"\'93").replace(r"\'91" + r"\'92", r"\'91" + r"\'91"))
+            
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = (corrected_text.replace(r"\'93" + r"\'91" + r"\'94", r"\'93" + r"\'91" + r"\'93")
+                .replace(r"\'91" + r"\'93" + r"\'92", r"\'91" + r"\'93" + r"\'91")
+                .replace(r"\'93" + r"\'94", r"\'93" + r"\'93").replace(r"\'91" + r"\'92", r"\'91" + r"\'91"))
 
-                #The RTF escapes are substituted for the symbols to allow for adequate representation within
-                #the RTF file. It is important to do the autocorrect step before the substitution of RTF escapes
-                #for their original characters, as some RTF escapes end with a letter, which could be included
-                #in an adjoining word when splitting the words of the text string in the autocorrect code:
-                #(word_list = re.split(r'(\W+)', text))
-                rtf_escapes = [['…', r"\'85"], ['†', r"\'86"], ['‡', r"\'87"],  ['✕', r"\'d7"], ['\+', r"\'2b"],
-                ['⋅', r"\'b7"], ['·', r"\'b7"], ['÷', r"\'f7"], ['/', r"\'2f"], ['>', r"\'3e"], ['<', r"\'3c"],
-                ['¢', r"\'a2"], ['\$', r"\'24"], ['€', r"\'80"], ['¤', r"\'a4"], ['¥', r"\'a5"],  [r'\[', r"\'5b"],
-                ['\]', r"\'5d"], ['\^', r"\'5e"], ['ˆ', r"\'88"], ['`', r"\'60"], ['´', r"\'b4"], ['”', r"\'94"],
-                ['\|', r"\'7c"], ['¦', r"\'a6"], ['£', r"\'a3"], ['″', r"\'22"], ['%', r"\'25"], ['‰', r"\'89"],
-                ['Š', r"\'8a"], ['š', r"\'9a"], ['‹', r"\'8b"], ['›', r"\'9b"], ['Œ', r"\'8c"], ['œ', r"\'9c"],
-                ['Ÿ', r"\'9f"], ['Ž', r"\'8e"], ['ž', r"\'9e"], ['°', r"\'b0"], ['#', r"\'23"], ['&', r"\'26"],
-                ['©', r"\'a9"], ['™', r"\'99"], ['•', r"\'95"], ['@', r"\'40"], [r'\*', r"\'2a"], ['∼', r"\'98"],
-                ['±', r"\'b1"], ['€', r"\'80"], ['͵', r"\'80"], ['ƒ', r"\'83"], ['„', r"\'84"], ['〃', r"\'22"],
-                ['¶', r"\'b6"], ['®', r"\'ae"], ['§', r"\'a7"], ['«', r"\'ab"], ['»', r"\'bb"], ['¡', r"\'a1"],
-                ['¿', r"\'bf"], ['¨', r"\'a8"], ['ª', r"\'aa"], ['º', r"\'ba"], ['¬', r"\'ac"], ['¯', r"\'af"],
-                ['¼', r"\'bc"], ['½', r"\'bd"], ['¾', r"\'be"], ['¹', r"\'b9"], ['²', r"\'b2"], ['³', r"\'b3"],
-                ['µ', r"\'b5"], ['¸', r"\'b8"], ['À', r"\'c0"], ['Á', r"\'c1"], ['Â', r"\'c2"], ['Ã', r"\'c3"],
-                ['Ä', r"\'c4"], ['Å', r"\'c5"], ['Æ', r"\'c6"], ['Ç', r"\'c7"], ['È', r"\'c8"], ['É', r"\'c9"],
-                ['Ê', r"\'ca"], ['Ë', r"\'cb"], ['Ì', r"\'cc"], ['Í', r"\'cd"], ['Î', r"\'ce"], ['Ï', r"\'cf"],
-                ['Ð', r"\'d0"], ['Ñ', r"\'d1"], ['Ò', r"\'d2"], ['Ó', r"\'d3"], ['Ô', r"\'d4"], ['Õ', r"\'d5"],
-                ['Ö', r"\'d6"], ['Ø', r"\'d8"], ['Ù', r"\'d9"], ['Ú', r"\'da"], ['Û', r"\'db"], ['Ü', r"\'dc"],
-                ['Ý', r"\'dd"], ['Þ', r"\'de"], ['ß', r"\'df"], ['à', r"\'e0"], ['á', r"\'e1"], ['â', r"\'e2"],
-                ['ã', r"\'e3"], ['ä', r"\'e4"], ['å', r"\'e5"], ['æ', r"\'e6"], ['ç', r"\'e7"], ['è', r"\'e8"],
-                ['é', r"\'e9"], ['ê', r"\'ea"], ['ë', r"\'eb"], ['ì', r"\'ec"], ['í', r"\'ed"], ['î', r"\'ee"],
-                ['ï', r"\'ef"], ['ð', r"\'f0"], ['ñ', r"\'f1"], ['ò', r"\'f2"], ['ó', r"\'f3"], ['ô', r"\'f4"],
-                ['õ', r"\'f5"], ['ö', r"\'f6"], ['ø', r"\'f8"], ['ù', r"\'f9"], ['ú', r"\'fa"], ['û', r"\'fb"],
-                ['ü', r"\'fc"], ['ý', r"\'fd"], ['þ', r"\'fe"], ['ÿ', r"\'ff"], ["\-", r"\'2d"], ["—", r"\'97"],
-                ['—', r"\'96"], ['_', r"\'5f"], ["‘", r"\'91"], ["’", r"\'92"], ['“', r"\'93"], ['=', r"\'3d"],
-                ['–', r"\'96"]]
-                for escape in rtf_escapes:
-                    text = re.sub(escape[0], escape[1], text)
+            #Any instance of two successive hyphens is changed to an em-dash. This is done after
+            #dealing with unsymmetrical quotes, as the presence of a hyphen is of consequence in
+            #determining which directional quote to use.
+            text = text.replace("--", r"\'97")
+            
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = corrected_text.replace("--", r"\'97")
+            
+            #The fractions (made up of a space or hyphen/en- or em-dash (as in 2-1/2), a numerator, 
+            #a forward slash and a denominator, followed by a character that isn't a forward slash 
+            #in order to avoid processing dates such as "01/19/1909") need to be dealt with before 
+            #the smallcaps formating indicators, which are also forward slashes. The "group(0)" 
+            #corresponding to the complete match are added to the set "fraction_match_groups", in 
+            #order to avoid performing "re.sub()" methods on redundant matches. The fractions will
+            #be formatted as follows: superscript numerator, RTF escaped forward slash (r"\'2f")
+            #to avoid conflicts with the smallcaps forward slash indicators, subscript denominators.
+            #A space will always precede the numerator.
+            fraction_matches = re.finditer(r"[-–— ]\d+/\d+[^/]", text)
+            fraction_match_groups = set([match.group(0) for match in fraction_matches])
+            if fraction_match_groups != set():
+                #If either one of the "vulgar" fractions such as ¼ (u"\u00BC") are present 
+                #in the "text" in addition to other fractions located in "fraction_match_groups", 
+                #then the "vulgar" fractions will be formatted the same way as the other fractions, and 
+                #a space will always be present in-between the first preceeding non-space character
+                #and the numerator (1¼ will be changed to r"1 {\\super 1}\\'2f{\\sub 4}").
+                #The dictionary "vulgar_fractions" holds all of the unicode vulgar fractions
+                #(ex: ¼ is u"\u00BC":["1","4"]).
+                vulgar_fractions = {
+                    u"\u00BC":["1","4"], u"\u00BD":["1","2"], u"\u00BE":["3","4"], 
+                    u"\u2150":["1","7"], u"\u2151":["1","9"], u"\u2152":["1","10"],
+                    u"\u2153":["1","3"], u"\u2154":["2","3"], u"\u2155":["1","5"], 
+                    u"\u2156":["2","5"], u"\u2157":["3","5"], u"\u2158":["4","5"],
+                    u"\u2159":["1","6"], u"\u215A":["5","6"], u"\u215B":["1","8"], 
+                    u"\u215C":["3","8"], u"\u215D":["5","8"], u"\u215E":["7","8"],}
+                for vulgar_fraction, num_denom in vulgar_fractions.items():
+                    if vulgar_fraction in text:
+                        text = re.sub(r"([^ ])[ ]*" + vulgar_fraction, 
+                        r"\1 {\\super " + num_denom[0] + r"}\\'2f{\\sub " + num_denom[1] + r"}", text)
                     if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                        corrected_text = re.sub(escape[0], escape[1], corrected_text)
-
-                #Successive spaces in excess of two (to accomodate for any optional spaces after RTF commands)
-                #are changed for a single space, and the extraneous spaces before closing double or single quotes
-                #are removed. Also, two successive hyphens are changed for an "em" dash.
-                text = (re.sub('[" "]{2,}', " ", text).replace(" \\'94", "\\'94")
-                .replace(" \\'92", "\\'92").replace("\\'2d\\'2d", r"\'97"))
+                        if vulgar_fraction in corrected_text:
+                            corrected_text = re.sub(r"([^ ])[ ]*" + vulgar_fraction, 
+                            r"\1 {\\super " + num_denom[0] + r"}\\'2f{\\sub " + num_denom[1] + r"}", corrected_text)
+                #The elements in the set "fraction_match_groups" are cycled over and
+                #each one is split along one or more successive digits, while retaining
+                #these splitting points in the resulting "fraction" list (due to the 
+                #parentheses r"(\d+)"). For example, the fraction "3-2/3," will result in
+                #the following "fraction" list: "['-', '2', '/', '3', ',']". When assembling
+                #the string "match_replacement", the first element is skipped over, as a space
+                #replaces it in case it was a hyphen, as in the example "3-2/3," above. The
+                #superscript numerator ("fraction[1]") is then added, followed by the RTF 
+                #escaped forward slash (r"\'2f") and subscript denominator. Finally, the non-forward
+                #slash character directly following the denominator ("fraction[4]") is added back.
+                for fraction_match in fraction_match_groups:
+                    fraction = re.split(r"(\d+)", fraction_match)
+                    #Note that the character before the numerator is in all cases
+                    #a space (r" "), so that any hyphens are changed to a space.
+                    match_replacement = r" " + r"{\\super " + fraction[1] + r"}\\'2f{\\sub " + fraction[3]+ r"}" + fraction[4]
+                    text = re.sub(fraction_match, match_replacement, text)
+                    
+                    if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                        corrected_text = re.sub(fraction_match, match_replacement, corrected_text)
+                
+            #The RTF escapes are substituted for the symbols to allow for adequate representation within
+            #the RTF file. It is important to do the autocorrect step before the substitution of RTF escapes
+            #for their original characters, as some RTF escapes end with a letter, which could be included
+            #in an adjoining word when splitting the words of the text string in the autocorrect code:
+            #word_list = re.split(r"([^\w'’]+)", text)
+            rtf_escapes = [['…', r"\'85"], ['†', r"\'86"], ['‡', r"\'87"],  ['✕', r"\'d7"], ['×', r"\'d7"], 
+            [r"\+", r"\'2b"], ['⋅', r"\'b7"], ['·', r"\'b7"], ['÷', r"\'f7"], ['/', r"\'2f"], ['>', r"\'3e"], 
+            ['<', r"\'3c"], ['¢', r"\'a2"], [r"\$", r"\'24"], ['¤', r"\'A4"], ['¥', r"\'a5"],  [r'\[', r"\'5b"],
+            [r"\]", r"\'5d"], [r"\^", r"\'5e"], ['‸', r"\'5e"], ['ˆ', r"\'88"], ['`', r"\'60"], ['´', r"\'b4"], 
+            ['”', r"\'94"], [r"\|", r"\'7c"], ['¦', r"\'a6"], ['£', r"\'a3"], ['″', r"\'22"], ['%', r"\'25"], 
+            ['‰', r"\'89"], ['Š', r"\'8a"], ['š', r"\'9a"], ['‹', r"\'8b"], ['›', r"\'9b"], ['Œ', r"\'8c"], 
+            ['œ', r"\'9c"], ['Ÿ', r"\'9f"], ['Ž', r"\'8e"], ['ž', r"\'9e"], ['°', r"\'b0"], ['#', r"\'23"], 
+            ['&', r"\'26"], ['©', r"\'a9"], ['™', r"\'99"], ['•', r"\'95"], ['@', r"\'40"], [r'\*', r"\'2a"], 
+            ['~', r"\'98"], ['∼', r"\'98"], ['±', r"\'b1"], ['€', r"\'80"], ['ƒ', r"\'83"], ['‚', r"\'82"], 
+            ['„', r"\'84"], ['¶', r"\'b6"], ['®', r"\'ae"], ['§', r"\'a7"], ['«', r"\'ab"], ['»', r"\'bb"], 
+            ['¡', r"\'a1"], ['¿', r"\'bf"], ['¨', r"\'a8"], ['ª', r"\'aa"], ['º', r"\'ba"], ['¬', r"\'ac"], 
+            ['¯', r"\'af"], ['ˉ', r"\'af"], ['¼', r"\'bc"], ['½', r"\'bd"], ['¾', r"\'be"], ['¹', r"\'b9"], 
+            ['²', r"\'b2"], ['³', r"\'b3"], ['µ', r"\'b5"], ['¸', r"\'b8"], ['À', r"\'c0"], ['Á', r"\'c1"], 
+            ['Â', r"\'c2"], ['Ã', r"\'c3"], ['Ä', r"\'c4"], ['Å', r"\'c5"], ['Æ', r"\'c6"], ['Ç', r"\'c7"], 
+            ['È', r"\'c8"], ['É', r"\'c9"], ['Ê', r"\'ca"], ['Ë', r"\'cb"], ['Ì', r"\'cc"], ['Í', r"\'cd"], 
+            ['Î', r"\'ce"], ['Ï', r"\'cf"], ['Ð', r"\'d0"], ['Ñ', r"\'d1"], ['Ò', r"\'d2"], ['Ó', r"\'d3"], 
+            ['Ô', r"\'d4"], ['Õ', r"\'d5"], ['Ö', r"\'d6"], ['Ø', r"\'d8"], ['Ù', r"\'d9"], ['Ú', r"\'da"], 
+            ['Û', r"\'db"], ['Ü', r"\'dc"], ['Ý', r"\'dd"], ['Þ', r"\'de"], ['ß', r"\'df"], ['à', r"\'e0"], 
+            ['á', r"\'e1"], ['â', r"\'e2"], ['ã', r"\'e3"], ['ä', r"\'e4"], ['å', r"\'e5"], ['æ', r"\'e6"], 
+            ['ç', r"\'e7"], ['è', r"\'e8"], ['é', r"\'e9"], ['ê', r"\'ea"], ['ë', r"\'eb"], ['ì', r"\'ec"], 
+            ['í', r"\'ed"], ['î', r"\'ee"], ['ï', r"\'ef"], ['ð', r"\'f0"], ['ñ', r"\'f1"], ['ò', r"\'f2"], 
+            ['ó', r"\'f3"], ['ô', r"\'f4"], ['õ', r"\'f5"], ['ö', r"\'f6"], ['ø', r"\'f8"], ['ù', r"\'f9"], 
+            ['ú', r"\'fa"], ['û', r"\'fb"], ['ü', r"\'fc"], ['ý', r"\'fd"], ['þ', r"\'fe"], ['ÿ', r"\'ff"], 
+            [r"\-", r"\'2d"], ["—", r"\'97"], ['–', r"\'96"], ['_', r"\'5f"], ["‘", r"\'91"], ["’", r"\'92"], 
+            ['“', r"\'93"], ['=', r"\'3d"]]
+            for escape in rtf_escapes:
+                text = re.sub(escape[0], escape[1], text)
                 if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
-                    corrected_text = (re.sub('[" "]+', " ", corrected_text).replace(" \\'94", "\\'94")
-                    .replace(" \\'92", "\\'92").replace("--", r"\'97"))
-                    with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
-                        e.write(corrected_text)
-                f.write(text)
+                    corrected_text = re.sub(escape[0], escape[1], corrected_text)
+            
+            #Any instance of a hyphen, en-dash or em-dash flanked by closing double or single quotes would be
+            #changed to a closing quote, dash and an opening quote.
+            text = (text.replace(r"\'94" + "-" + r"\'94", r"\'94" + "-" + r"\'93" )
+            .replace(r"\'94" + r"\'96" + r"\'94", r"\'94" + r"\'96" + r"\'93")
+            .replace(r"\'94" + r"\'97" + r"\'94", r"\'94" + r"\'97" + r"\'93")
+            .replace(r"\'92" + "-" + r"\'92", r"\'92" + "-" + r"\'91")
+            .replace(r"\'92" + r"\'96" + r"\'92", r"\'92" + r"\'96" + r"\'91")
+            .replace(r"\'92" + r"\'97" + r"\'92", r"\'92" + r"\'97" + r"\'91"))
+
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = (corrected_text.replace(r"\'94" + "-" + r"\'94", r"\'94" + "-" + r"\'93" )
+                .replace(r"\'94" + r"\'96" + r"\'94", r"\'94" + r"\'96" + r"\'93")
+                .replace(r"\'94" + r"\'97" + r"\'94", r"\'94" + r"\'97" + r"\'93")
+                .replace(r"\'92" + "-" + r"\'92", r"\'92" + "-" + r"\'91")
+                .replace(r"\'92" + r"\'96" + r"\'92", r"\'92" + r"\'96" + r"\'91")
+                .replace(r"\'92" + r"\'97" + r"\'92", r"\'92" + r"\'97" + r"\'91"))
+
+            #Sometimes authors anonymize a character's name through the inclusion of em-dashes or 
+            #periods after the first initial. This can result in confusion in the smart quote code 
+            #of PrintABook when a possessive contraction ("‘s") is used after the hyphen, en- or 
+            #em-dash or period. An opening quote may be assigned by the code instead of a closing 
+            #single quote. This "re.sub()" method
+            #makes sure that the possessive contraction right before an "s" will be a closing
+            #single quote.
+            #For example, taken from "The Works of Edgar Allan Poe, Volume 2":
+            #“You looked among D——‘s papers, of course, and into the books of the library?”
+            text = re.sub(r"(\w[\\'2d|\\'96|\\'97|\.])\\'91([sS]) ", r"\1\\'92\2 ", text)
+
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = re.sub(r"(\w[\\'2d|\\'96|\\'97|\.])\\'91([sS]) ", r"\1\\'92\2 ", corrected_text)
+            
+            #The following code deals with the creation of a "proofreading.txt" document that
+            #contains some items that the user will need to handle manually, such as special
+            #characters that can't be RTF escaped and nested footnotes/endnotes. As the different
+            #sections of the TXT document are separated by page breaks, the user needs to open it with
+            #a word processor that can display form feeds ("\f"), such as LibreOffice Writer.
+            
+            #Should there still be any non-regular characters (anything not in [^a-zA-Z0-9,.;:?!{}()\"' \\]),
+            #with ('\) being included so that the RTF escapes themselves aren't reported, these characters 
+            #will compiled in a TXT file with a notification to the user on the terminal. The user can then 
+            #use the TXT file to search for these characters in the RTF file so as to deal with them. The TXT 
+            #file will contain the special characters, along with an exerpt of the original TXT file where 
+            #they can be found.
+            special_characters = set(re.findall(r"[^a-zA-Z0-9,.;:?!{}()\"' \\]", text))
+            #A string of the remaining special characters is created by joining each of the
+            #individual characters in the set "special_characters" for the "re.finditer()"
+            #search of the "original_text". The initial "re.findall()" is performed on 
+            #"text" after all of the RTF escapes have been performed, in order to
+            #pinpoint the remaining special characters that need to be handled manually.
+            #The "re.finditer()" step is then performed on the "original_text", so as to 
+            #find the indices of the occurence of the special characters in "original_text",
+            #which is much more human-readable, as it contains no RTF escapes nor commands.
+            #This will allow excerpts of the "original_text" surrounding the remaining 
+            #special characters to be included in the TXT file, for ease of use.
+            if special_characters != set():
+                string_of_special_characters = "".join(char for char in special_characters)
+                special_character_matches = re.finditer(r"[" + re.escape(string_of_special_characters) + "]", original_text)
+                special_character_match_indices = [match.start() for match in special_character_matches]
+                if special_character_match_indices != []:
+                    if len(special_character_match_indices) > 1:
+                        special_characters_txt_string = ('Some special characters could not be included in the RTF document. ' +
+                        'Please use the text excerpts to find these by context in your RTF document and deal with them appropriately.') 
+                    else:
+                        special_characters_txt_string = ('A special character could not be included in the RTF document. ' +
+                        'Please use the text excerpt to find it by context in your RTF document and deal with it appropriately.') 
+                    #The "special_characters_dict" dictionary will allow to compile a list of all
+                    #the indices within the "original_document" where a given special character
+                    #is found. This will allow to group entries pertaining to a given special character
+                    #together in the TXT file, so that they can be dealt with together.
+                    special_characters_dict = {}
+                    for index in special_character_match_indices:
+                        if original_text[index] not in special_characters_dict.keys():
+                            special_characters_dict[original_text[index]] = [index]
+                        else:
+                            special_characters_dict[original_text[index]].append(index)
+            
+            #The TXT document is assembled here
+            if special_characters != set():
+                if not os.path.isdir(os.path.join(cwd, "Proofreading")):
+                    os.makedirs(os.path.join(cwd, "Proofreading"))
+                with open(os.path.join(cwd, "Proofreading", "Proofreading.txt"), "w+", encoding="utf-8") as g:
+                    g.write("Here are some issues with your OCR text.\n\n")
+                    
+                    #If there are special characters that couldn't be
+                    #RTF escaped, they will be listed in the TXT 
+                    #document, along with excerpts from "original_text"
+                    #that will allow for them to be easily found in the text
+                    #for manual handling.
+                    if special_characters != set():
+                        print("\n" + special_characters_txt_string + "\n")
+                        g.write(special_characters_txt_string + "\n" + 77*("=") + "\n\n")
+                        #The keys represent the special symbols, and the values
+                        #are the location index of those special symbols in 
+                        #"original_text". If the index is close to the
+                        #start of the document ("index < 100"), then the first
+                        #two hundred characters will be included in the excerpt.
+                        # 
+                        #If the symbol is 100 characters or less from the end 
+                        #of "original_text", the last two hundred 
+                        #characters will be included in the excerpt/
+                        # 
+                        #Otherwise, the 100 characters before and 
+                        #100 characters after the special character
+                        #will be included in the excerpt 
+                        for key, value in special_characters_dict.items():
+                            for index in value:
+                                if index < 100:
+                                    g.write(key + ": " + original_text[0:index + 200].strip() + "\n\n")
+                                elif index >= len(original_text) - 100:
+                                    g.write(key + ": " + original_text[-200:].strip().strip() + "\n\n")
+                                else:
+                                    g.write(key + ": " + original_text[index-100:index+100].strip() + "\n\n")
+            
+            #Successive spaces in excess of two (to accomodate for any optional spaces after RTF commands)
+            #are changed for a single space, and the extraneous spaces before closing double or single quotes
+            #are removed. Also, two successive hyphens are changed for an "em" dash.
+            text = (re.sub('[" "]{2,}', " ", text).replace(" \\'94", "\\'94")
+            .replace(" \\'92", "\\'92").replace("\\'2d\\'2d", r"\'97"))
+            if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
+                corrected_text = (re.sub('[" "]+', " ", corrected_text).replace(" \\'94", "\\'94")
+                .replace(" \\'92", "\\'92").replace("--", r"\'97"))
+                with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
+                    #The "strip()" method is used to remove leading or trailing spaces in the entire "corrected_text" string.
+                    e.write(corrected_text.strip(" "))
+            #The "strip()" method is used to remove leading or trailing spaces in the entire "text" string.
+            f.write(text.strip(" "))
 
             #An ".rtf" file was created and a basic document prolog was added earlier, followed by the
             #contents of the "text" string. The closing curly bracket (}) is now added at the very end
