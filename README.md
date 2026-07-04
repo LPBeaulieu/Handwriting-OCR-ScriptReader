@@ -8,6 +8,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
   [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPLv3.0-brightgreen.svg)](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/LICENSE)
   [![GitHub last commit](https://img.shields.io/github/last-commit/LPBeaulieu/Handwriting-OCR-ScriptReader)](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader)
   ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+  ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
   
 </div>
 
@@ -15,7 +16,7 @@ This handwriting OCR application can convert JPEG handwritten text images into R
 
 <p align="left"> <b>ScriptReader</b> is a tool enabling you to convert scanned handwritten pages (in JPEG image format) into rich text format (RTF) 
   documents, complete with formatting elements such as text alignment, paragraphs, <u>underline</u>, <i>italics</i>, <b>bold</b> and <del>strikethrough</del>. </p>
-<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (square dot grid cells containing mistakes, which are filled in with ink) automatically get filtered out, and do not appear in the final RTF text. Also, the biodegradable fountain pen ink that I have disclosed earlier (see https://www.instructables.com/Recipe-for-a-Biodegradable-Blue-Ink-for-Fountain-P/) pairs well with the notebooks that you print with PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook)!<br>
+<p align="left"> A neat functionality of <b>ScriptReader</b> is that the typos (square dot grid cells containing mistakes, which are filled in with ink) automatically get filtered out, and do not appear in the final RTF text. You can print out your own smart notebook pages with black squares at the top of the pages to automatically correct any page tilt of the scanned images either by using PrintANotebook (see https://github.com/LPBeaulieu/Notebook-Maker-PrintANotebook), or the A4 or US Letter notebook pages with 0.13 inch dot spacing found in the zipped release folder. Simply print the PDF document in duplex landscape mode, flipping on the short side, and make sure to disable any page resizing when printing the pages in order to have accurate dot spacing.<br>
 
 My tests with over 30,000 characters of training data (about 50 half-letter pages of cursive handwriting on the <b>ScriptReader</b> pages, with 0.13 inch dot spacing and double line spacing) consistently gave me an <b>OCR accuracy above 99%!</b>
 <br> 
@@ -34,7 +35,7 @@ My tests with over 30,000 characters of training data (about 50 half-letter page
   (to crop the individual characters in the handwritten scanned images) and glob2 to automatically retrieve the cropped character image size.
   
 - A deep learning model trained with a specific handwriting is unlikely to generalize well to other handwritings. Also, I would advise you to keep your dataset private, as it would in theory be possible to reverse engineer it in order to generate text with your handwriting. <b>For this reason, I encourage you to use another handwriting than your official handwriting, as an added precaution.</b> For example, should you normally use print script, you would then train your OCR model with small caps handwriting instead.
-- The <b>ScriptReader</b> pages from PrintANotebook need to be used, and the individual letters need to be written within the vertical boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space above and below the line of text for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 dpi, with the US Letter page size setting and the text facing the top of the page</b>, as the black squares will be used to automatically align the pages. You should refrain from writing near the black squares to allow for the alignment to be unimpeded by any artifacts. You can write with any color of ink, as long as it is saturated enough to be picked up by your scanner, as the images are converted to greyscale images for training the model and OCR.  
+- The <b>ScriptReader</b> pages from PrintANotebook need to be used, and the individual letters need to be written within the vertical boundaries of a given dot grid square cell (comprised of four dots). The segmentation code allows plenty of space above and below the line of text for ascenders and descenders, however. The handwritten pages should be <b>scanned at a resolution of 300 dpi, with the text facing the top of the page</b>, as the black squares will be used to automatically align the pages. You should refrain from writing near the black squares to allow for the alignment to be unimpeded by any artifacts. You can write with any color of ink, as long as it is saturated enough to be picked up by your scanner, as the images are converted to greyscale images for training the model and OCR.  
 
 - Make sure that all of your characters are very distinct from one another. I suggest using bars or dots in the zeros and writing the ones the way you see them displayed on screen ("1"), so that they aren't confused with an uppercase "O" and a lowercase "l", respectively. Also, I recommend that a sizable portion of your handwritten training data be comprised of pangrams (sentences that contain every letter of the alphabet), to ensure that you have a good set of characters to train on. You could write a set of pangrams all in capital letters and another in lowercase letters, so that every letter would be represented in your dataset both in upper- and lowercase form. Be sure to include RTF commands and the most common punctuation marks ("'", '"', ".", ",", ":", ";", "?", "!", "(", ")", "-") regularly throughout your sentences in order for them to be trained in the context of normal writing.
 
@@ -46,7 +47,7 @@ My tests with over 30,000 characters of training data (about 50 half-letter page
 - <b>"\ul":</b> Underline opening tag  <b>"\ul0":</b> Underline closing tag<br>
 - <b>"\scaps":</b> Smallcaps opening tag  <b>"\scaps0":</b> Smallcaps closing tag<br>
 - <b>"\tab":</b> Insert a tab<br>
-- <b>"\par":</b> Start a new paragraph (By default, my code already includes a tab at the start of every new paragraph)<br>
+- <b>"\par":</b> Start a new paragraph<br>
 - <b>"\qc":</b> Center this paragraph (Simply add the "\qc" after "\par", for example: "\par\qc Your Centered Paragraph")<br>
 - <b>"\qj":</b> Justified alignment for this paragraph (Simply add the "\qj" after "\par", for example: "\par\qj Your Justified Paragraph")<br>
 - <b>"\ql":</b> Left alignment for this paragraph<br> (Simply add the "\ql" after "\par", for example: "\par\ql Your Left-Aligned Paragraph")
@@ -61,24 +62,24 @@ My tests with over 30,000 characters of training data (about 50 half-letter page
 ![ScriptReader Demo](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/ScriptReader%20Demo.png)<hr>
 The illustration above shows the various use cases of common RTF commands with <b>ScriptReader</b>. Notice that the typos have simply been darkened with ink, such that the model identifies dark squares as being mistakes that need to be filtered out of the final text. While curly brackets may be employed to avoid using closing RTF commands, their use should be avoided, as the presence of an OCR error in one of them might prevent the file from being opened in a regular word processor. You would then be notified of the location of the mistake in the RTF file, which could be corrected by hand by opening the file in a basic text editor (such as Notepad on Windows or Text Editor on Ubuntu) and by fixing the error at the appropriate row and column. Make sure to train your model on handwritten text that includes a lot of the abovementioned RTF commands, so that the OCR errors are minimized. Also remember to add a space at the beginning of a new line if you ended the previous word at the very end of the last line. Otherwise, the two words will end up merged together, as obviated by the red squiggly line in the image above.<br><br>
 
-To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, "\par" is changed for "\par\pard\tab" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values, and a tab is included automatically when a new paragraph is started by writing "\par". The <b>advanced RTF mode</b> just interprets the RTF commands as you write them.
+To keep things as simple as possible in the (default) <b>basic RTF mode</b> of the "get_predictions.py" code, "\par" is changed for "\par\pard" after OCR. This means that the paragraph-formatting attributes (such as centered alignment, "<i>qc</i>") are returned to their default values automatically when a new paragraph is started by writing "\par" in your handwritten manuscript. Please note that the new version of the code doesn't automatically indent your new paragraphs anymore through the procedural introduction of "\tab" RTF commands as shown in the illustration above, as you should really do this through the paragraph style settings of your word processor for best results. That being said, any "\tab" RTF commands that you actually write in your handwritten manuscript will result in inserted tabs in the OCR file. The <b>advanced RTF mode</b> just interprets the RTF commands as you write them (please consult the comments in the actual Python script to activate the advanced mode).
 
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
+If your PC runs on Windows version 10 or later with a x86-64 architecture, then you will be able to run the compiled version of the Python scripts without need for installation of dependencies. Simply download the zipped folder in the release section and extract it in any destination of your choosing where you have writing permissions, such as the "Documents" folder. Then move on to the "Usage" section below for more on how to use the executable files within the working folder.
+
 The following instructions will be provided in great detail, as they are intended for a broad audience and will
 allow to run a copy of <b>ScriptReader</b> on a local computer.
-
-The instructions below are for Windows operating systems, and while I am not 100% sure that it is able to run on Windows, I made every effort to adapt the code so that it would be compatible, but the code runs very nicely on Linux.
 
 Start by holding the "Shift" key while right-clicking in your working folder, then select "Open PowerShell window here" to access the PowerShell in your working folder and enter the commands described below.
 
 <b>Step 1</b>- Install <b>PyTorch</b> (Required Fastai library to convert images into a format usable for deep learning) using the following command (or the equivalent command found at https://pytorch.org/get-started/locally/ suitable to your system):
 ```
-pip3 install torch torchvision torchaudio
+pip3 install torch torchvision
 ```
 
-<b>Step 2</b>- Install the <i>CPU-only</i> version of <b>Fastai</b>, which is a deep learning Python library. The CPU-only version suffices for this application, at least when running on Linux, as the character images are very small in size:
+<b>Step 2</b>- Install the <i>CPU-only</i> version of <b>Fastai</b>, which is a deep learning Python library. The CPU-only version suffices for this application, as the character images are very small in size:
 ```
 py -m pip install fastai
 ```
@@ -93,23 +94,18 @@ py -m pip install opencv-python
 py -m pip install alive-progress
 ```
 
-<b>Step 5</b>- Install <b>glob</b> (Python module used to automatically retrieve the cropped character image pixel size):
-```
-py -m pip install glob2
-```
-
-<b>Step 6</b>- Install <b>TextBlob</b> (Python module used for the autocorrect feature):
+<b>Step 5</b>- Install <b>TextBlob</b> (Python module used for the autocorrect feature):
 ```
 py -m pip install textblob
 ```
 
-<b>Step 7</b>- Create the folders "Training&Validation Data" and "OCR Raw Data" in your working folder:
+<b>Step 6</b>- Create the folders "Training&Validation Data" and "OCR Raw Data" in your working folder:
 ```
 mkdir "OCR Raw Data" 
 mkdir "Training&Validation Data" 
 ```
 
-<b>Step 8</b>- You're now ready to use <b>ScriptReader</b>! 🎉
+<b>Step 7</b>- You're now ready to use <b>ScriptReader</b>! 🎉
 
 ## 🎈 Usage <a name="usage"></a>
 First off, you will need to print some <b>ScriptReader</b> notebook pages, which are special in that they are dot grid pages with line spacing in-between
@@ -143,6 +139,16 @@ the individual characters on the handwritten scanned image) and then write a ".t
 of every rectangle to a label will allow to generate a dataset of character images with their corresponding labels. The handwritten
 page images overlaid with the character rectangles are stored in the "Page image files with rectangles" folder, which is created
 automatically by the code.
+
+To run the script, you would need to hold the "Shift" key down while right-clicking in the working folder and select the "Open PowerShell window here" option. Then enter the following command, including the dot spacing (adjust to however many inches are between your dots in your notebook pages) and number of empty lines between the lines of dot grids (again, adjust to your own notebook pages):
+```
+py create_rectangles.py "dot_spacing:0.13" "lines_between_text:2"
+```
+If your PC runs on Windows version 10 or later with a x86-64 architecture, then you will be able to run the compiled version of the Python scripts (see instructions above on how to download and extract the release) in a similar way (opening a PowerShell window in the extracted folder containing the "create_rectangles_Win10_x86_64.exe" executable file:
+```
+./create_rectangles_Win10_x86_64 "dot_spacing:0.13" "lines_between_text:2"
+```
+The same instructions apply for running the other Python scripts and executable applications in the steps below.
 
 ![Character Segmentation](https://github.com/LPBeaulieu/Handwriting-OCR-ScriptReader/blob/main/ScriptReader%20Github%20Page%20Images/character%20segmentation.png)<hr>
 The figure above shows the segmentation results (green rectangles) for the left-hand scanned image. In reality, some overlap is allowed horizontally and vertically in order to fully include the characters. The red rectangles show the position where the code has detected the black squares on top of the page, which allows for the automatic alignment of the page. The blue rectangles show where the code has screened in order to detect the black rectangles. It is therefore important that you avoid including very long titles or any writing in these regions of your notebook pages.<br><br>  
@@ -185,7 +191,9 @@ There are a few options available to you with respect to the handling of smart q
 "smart_quotes" or "symmetrical_quotes" options by passing in these arguments when running the code, then all of the directional quotes found within the page will be switched to their non-directional counterparts. This would be relevant had you trained the CNN model on directional quotes, but didn't get good OCR accuracy when handling them. After that first step, if there was at least one instance of a symmetrical quote in the original document and that you didn't specify the "symmetrical_quotes" option, or if you selected the "smart_quotes" option, the appropriate directional quotes will be applied to the page.
 
 There is an autocorrect feature in <b>ScriptReader</b> that allows you to specify the confidence threshold above which a correction should be made. Simply pass in "autocorrect:", followed by a percentage expressed in decimal form, the default being 1.0 (100%). For example, should you want the autocorrect feature to only make corrections for instances where it is at least 95% certain that the suggested word is the correct one, you would enter "autocorrect:0.95".
-        
+
+Furthermore, when passing in the "autocorrect_case" argument when running the code, any word containing lowercase letters or backslashes (i.e., indicative of RTF commands such as "\scaps " for smallcaps) will be lowercased, apart from the first letter, which may actually need to be uppercased in the case of proper nouns and adjectives. This will correct OCR errors that introduced uppercase letters in a word. Here are some examples ("before=>after") of how the autocorrect case mode would work: "tEst=>test", "TeSt=>Test", "\Scaps=>\scaps".
+    
   <br><b>Well there you have it!</b> You're now ready to convert your handwritten text into digital format! You can now write at the cottage or in the park without worrying about your laptop's battery life and still get your document polished up in digital form in the end! 🎉📖
   
   
