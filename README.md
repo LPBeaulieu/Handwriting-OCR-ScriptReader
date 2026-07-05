@@ -67,7 +67,7 @@ To keep things as simple as possible in the (default) <b>basic RTF mode</b> of t
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
-If your PC runs on Windows version 10 or later with a x86-64 architecture, then you will be able to run the compiled version of the Python scripts without need for installation of dependencies. Simply download the zipped folder in the release section and extract it in any destination of your choosing where you have writing permissions, such as the "Documents" folder. Then move on to the "Usage" section below for more on how to use the executable files within the working folder. **You may be prompted to install the Microsoft Visual C++ Redistributable in the PowerShell window when launching the executable files; simply click on the link to install it on your system.**
+If your PC runs on Windows version 10 or later with a x86-64 architecture, then you will be able to run the compiled version of the Python scripts without need for installation of dependencies. Simply download the zipped folder in the release section and extract it in any destination of your choosing where you have writing permissions, such as the "Documents" folder. Then move on to the "Usage" section below for more on how to use the executable files within the working folder. **You may be prompted to install the Microsoft Visual C++ Redistributable in the PowerShell window when launching the executable files; simply click on the link in the PowerShell window to install it on your system.**
 
 The following instructions will be provided in great detail, as they are intended for a broad audience and will
 allow to run a copy of <b>ScriptReader</b> on a local computer.
