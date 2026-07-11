@@ -88,6 +88,9 @@ if __name__ == '__main__':
             pass
             
     if model_name != None:
+        
+        OCR_text_file_name = None
+        
         #The list "JPEG_file_names" is populated with the ".jpg" file names in
         #the "OCR Raw Data" folder.
         front_JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cwd,
@@ -109,7 +112,7 @@ if __name__ == '__main__':
         back_JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cwd,
         "OCR Raw Data"))) if (file_name[:4].lower()=="back" and file_name[-4:] == ".jpg")])
 
-        if back_JPEG_file_names not in [None, []]:
+        if not OCR_text_file_name and back_JPEG_file_names not in [None, []]:
             OCR_text_file_name = re.findall(r"(.+)-[\d]*.jpg", back_JPEG_file_names[0])[0]
 
         #The folder "OCR Predictions" is created in the working folder, if
@@ -542,11 +545,11 @@ if __name__ == '__main__':
 
         if basic_autocorrect == True or basic_autocorrect_lower == True or autocorrect == True:
             with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
-                e.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
+                e.write(r"{\rtf1\ansi\deff0{\fonttbl{\f0 Ubuntu;}}\f0\fs24\par ")
 
 
         with open(os.path.join(path, OCR_text_file_name + '-OCR.rtf'), 'a+', encoding="utf-8") as f:
-            f.write(r"{\rtf1 \ansi \deff0 {\fonttbl {\f0 Ubuntu;}} \f0 \fs24 \par ")
+            f.write(r"{\rtf1\ansi\deff0{\fonttbl{\f0 Ubuntu;}}\f0\fs24\par ")
             
             #The "get_dot_x_coordinates(inches_between_dots, dot_diameter_pixels)"
             #function populates the "dot_x_coordinates" list with the same row "x"
@@ -1154,10 +1157,26 @@ if __name__ == '__main__':
                     #quote ("'"), which will later be converted to the directional quote.
                     elif text_current_page[j] == "single quote":
                         text_current_page[j] = "'"
+                    #If the label is "left single quote", it is replaced by a left single
+                    #quote ('‘'), which will later be RTF-escaped.
+                    elif text_current_page[j] == "left single quote":
+                        text_current_page[j] = '‘'
+                    #If the label is "right single quote", it is replaced by a right single
+                    #quote ('’'), which will later be RTF-escaped.
+                    elif text_current_page[j] == "right single quote":
+                        text_current_page[j] = '’'
                     #If the label is "double quote", it is replaced by a symmetrical double
                     #quote ('"'), which will later be converted to the directional quote.
                     elif text_current_page[j] == "double quote":
                         text_current_page[j] = '"'
+                    #If the label is "left double quote", it is replaced by a left double
+                    #quote ('“'), which will later be RTF-escaped.
+                    elif text_current_page[j] == "left double quote":
+                        text_current_page[j] = '“'
+                    #If the label is "right double quote", it is replaced by a right double
+                    #quote ('”'), which will later be RTF-escaped.
+                    elif text_current_page[j] == "right double quote":
+                        text_current_page[j] = '”'
                     #If the label is "hashtag", it is replaced by a hashtag.
                     elif text_current_page[j] == "hashtag":
                         text_current_page[j] = "#"

@@ -861,10 +861,30 @@ if __name__ == '__main__':
                     elif text[character_count] == u"\u0027":
                         labels.append("single quote")
                         character_count+=1
+                    #If the character in the txt file is a "‘" (Python source code u"\u2018"), "left single quote"
+                    #is appended to the list "labels".
+                    elif text[character_count] == u"\u2018":
+                        labels.append("left single quote")
+                        character_count+=1
+                    #If the character in the txt file is a "’" (Python source code u"\u2019"), "right single quote"
+                    #is appended to the list "labels".
+                    elif text[character_count] == u"\u2019":
+                        labels.append("right single quote")
+                        character_count+=1
                     #If the character in the txt file is a '"' (Python source code u"\u0022"), "double quote"
                     #is appended to the list "labels".
                     elif text[character_count] == u"\u0022":
                         labels.append("double quote")
+                        character_count+=1
+                    #If the character in the txt file is a "“" (Python source code u"\u201C"), "left double quote"
+                    #is appended to the list "labels".
+                    elif text[character_count] == u"\u201C":
+                        labels.append("left double quote")
+                        character_count+=1
+                    #If the character in the txt file is a "”" (Python source code u"\u201D"), "right double quote"
+                    #is appended to the list "labels".
+                    elif text[character_count] == u"\u201D":
+                        labels.append("right double quote")
                         character_count+=1
                     #If the character in the txt file is a '#' (Python source code in [u"\u0023", u"\uFF03"]), "hashtag"
                     #is appended to the list "labels".
@@ -967,6 +987,7 @@ if __name__ == '__main__':
                         os.makedirs(os.path.join(cwd, "Dataset", labels[page_character_index]))
                     file_path = os.path.join(cwd,  "Dataset", labels[page_character_index],
                     labels[page_character_index] + "-" + str(character_index) + ".jpg")
+                    
                     cv2.imwrite(file_path, cropped_char)
                     page_character_index += 1
                     character_index += 1
