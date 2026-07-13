@@ -86,7 +86,9 @@ if __name__ == '__main__':
             clear_screen()
         except:
             pass
-            
+    
+    #The "if" statement below only runs if the CNN model has successfully loaded
+    #(the value of "model_name" has been updated from its initial value of "None").    
     if model_name != None:
         
         OCR_text_file_name = None
@@ -112,7 +114,10 @@ if __name__ == '__main__':
         back_JPEG_file_names = ([file_name for file_name in sorted(os.listdir(os.path.join(cwd,
         "OCR Raw Data"))) if (file_name[:4].lower()=="back" and file_name[-4:] == ".jpg")])
 
-        if not OCR_text_file_name and back_JPEG_file_names not in [None, []]:
+        if front_JPEG_file_names in [None, []] and back_JPEG_file_names in [None, []]:
+            sys.exit('\nPlease include some JPEG scanned images of handwritten text in the "OCR Ras Data" folder. ' +
+            'For best results, these should be scanned as JPEG images on a multipage scanner at a resolution of 300 dpi.\n')
+        elif not OCR_text_file_name and back_JPEG_file_names not in [None, []]:
             OCR_text_file_name = re.findall(r"(.+)-[\d]*.jpg", back_JPEG_file_names[0])[0]
 
         #The folder "OCR Predictions" is created in the working folder, if
@@ -162,6 +167,7 @@ if __name__ == '__main__':
         #the dot spacing in pixels, assuming that the pages
         #were printed with no scaling.
         inches_between_dots = None
+        lines_between_text = None
         dot_diameter_pixels = 5
         x_overlap = None
         y_overlap = None
@@ -425,6 +431,13 @@ if __name__ == '__main__':
         else:
             sys.exit(exception_string)
 
+        #As the user needs to provide both the dot spacing and the number of 
+        #empty lines between lines of text in order for the code to segment 
+        #the characters, if any of these two parameters are still at their 
+        #initial value of "None", an error message will be printed on-screen.
+        if not inches_between_dots or not lines_between_text:
+            sys.exit(exception_string)
+      
         #The number of pixels in-between two dots (assuming that the dot grid pages
         #were printed without image resizing) is given using the ratio of 2550 pixels
         #for every 8.5 inches at 300 ppi scan resolution.
@@ -1220,12 +1233,16 @@ if __name__ == '__main__':
                     elif (text_current_page[j].strip()[0].islower() or text_current_page[j].strip()[0].isupper()):
                         text_current_page[j] = text_current_page[j].strip()[0]
 
+                #Remove deleted characters (filled cells that were labelled as "empty", and then converted to empty strings),
+                #as we will be looking at the previous and following characters to hyphens in the "for" loop below.
+                text_current_page = [char for char in text_current_page if char != ""]
+
                 #The following "for" loop removes spaces before and after hyphens, to
                 #ensure that hyphenated words do not include spaces.
                 for j in range(1, len(text_current_page)-1):
                     if text_current_page[j] in ["–","—","—", "-"] and text_current_page[j-1].strip() == "":
                         text_current_page[j-1] = ""
-                    elif text_current_page[j] in ["–","—","—", "-"] and text_current_page[j+1].strip() == "":
+                    if text_current_page[j] in ["–","—","—", "-"] and text_current_page[j+1].strip() == "":
                         text_current_page[j+1] = ""
 
                 #After processing the list "text_current_page"
@@ -1240,7 +1257,7 @@ if __name__ == '__main__':
             #or backslashes indicative of RTF commands will be lowercased, as there
             #could have been OCR errors that introduced uppercase letters in a word,
             #and these are much rarer than lowercase letters in most cases.
-            if not autocorrect_case:
+            if autocorrect_case:
                 #The "text" string will be split along spaces and then a nested "for"
                 #loop loops through every character of every word. If the word contains
                 #a backslash ("\\"), then it means that it is an RTF command and
@@ -1850,3 +1867,7 @@ if __name__ == '__main__':
                 with open(os.path.join(path, OCR_text_file_name + '-OCR (autocorrect).rtf'), 'a+', encoding="utf-8") as e:
                     e.write("}")
             f.write("}")
+    #The "else" statement below runs if the CNN model hasn't successfully loaded
+    #(the value of "model_name" is still its initial value of "None"). 
+    else:
+        sys.exit("\nPlease include an OCR model you trained with the \"train_model.py\" code in the working folder and run the code again.\n")
